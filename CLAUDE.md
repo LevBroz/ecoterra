@@ -95,6 +95,14 @@ Decisiones clave:
 - `payments.fee_id` es opcional: permite pagos libres (abonos) además de pago
   de cuota específica. Al pagar con `fee_id`, el backend marca la cuota `paid`.
 
+## Diseño visual
+
+El design system vive en `design-system/MASTER.md` (colores, tipografía,
+reglas de accesibilidad) y está implementado como tokens CSS (`--et-*`) en
+`frontend/assets/css/styles.css`. Para cualquier UI nueva: usar los tokens,
+Bootstrap Icons (nunca emojis como íconos), foco visible y transiciones
+150–300ms. Tipografía: Poppins (títulos) + Open Sans (cuerpo).
+
 ## Convenciones
 
 - Idioma de UI y mensajes: **español**. Código (variables, funciones): inglés.

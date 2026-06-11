@@ -53,7 +53,7 @@ export function renderNavbar(profile, links, active) {
       `<li class="nav-item"><a class="nav-link${id === active ? ' active' : ''}" href="${href}">${label}</a></li>`)
     .join('');
   return `
-  <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-ecoterra">
     <div class="container-fluid">
       <span class="navbar-brand fw-bold"><i class="bi bi-tree-fill"></i> EcoTerra</span>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">

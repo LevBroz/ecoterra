@@ -1,23 +1,310 @@
-/* EcoTerra — estilos sobre Bootstrap 5 */
+/* =============================================================
+   EcoTerra · Design System sobre Bootstrap 5
+   Generado con ui-ux-pro-max: paleta "Sustainable Energy",
+   tipografía "Modern Professional" (Poppins + Open Sans),
+   estilo "Data-Dense Dashboard".
+   ============================================================= */
 
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
+
+/* ---------- Tokens semánticos ---------- */
 :root {
-  --ecoterra-green: #198754;
+  --et-primary: #059669;        /* verde naturaleza */
+  --et-primary-hover: #047857;
+  --et-primary-dark: #065f46;   /* navbar / superficies de marca */
+  --et-foreground: #064e3b;
+  --et-background: #f6faf8;
+  --et-surface: #ffffff;
+  --et-muted: #64748b;
+  --et-border: #dbe7e0;
+  --et-warning: #d97706;
+  --et-danger: #dc2626;
+  --et-radius: 0.75rem;
+  --et-shadow-sm: 0 1px 2px rgba(6, 78, 59, 0.06), 0 1px 3px rgba(6, 78, 59, 0.08);
+  --et-shadow-md: 0 4px 12px rgba(6, 78, 59, 0.10);
+  --et-transition: 200ms ease-out;
+
+  /* Mapear Bootstrap a la marca */
+  --bs-success: var(--et-primary);
+  --bs-success-rgb: 5, 150, 105;
+  --bs-body-font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
+  --bs-body-color: #1e293b;
+  --bs-body-bg: var(--et-background);
+  --bs-light-rgb: 246, 250, 248;  /* .bg-light = fondo de marca */
 }
 
+body {
+  font-family: var(--bs-body-font-family);
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: var(--et-background);
+}
+
+h1, h2, h3, h4, h5, h6, .navbar-brand, .modal-title, .kpi-value {
+  font-family: 'Poppins', var(--bs-body-font-family);
+  font-weight: 600;
+  color: var(--et-foreground);
+}
+
+/* ---------- Accesibilidad: foco visible ---------- */
+:focus-visible {
+  outline: 3px solid rgba(5, 150, 105, 0.45);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button, a, select, [data-bs-toggle], .nav-link {
+  cursor: pointer;
+}
+
+/* ---------- Navbar de marca ---------- */
+.navbar-ecoterra {
+  background: linear-gradient(135deg, var(--et-primary-dark) 0%, var(--et-primary) 100%);
+  box-shadow: var(--et-shadow-md);
+}
+
+.navbar-ecoterra .navbar-brand {
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+.navbar-ecoterra .nav-link {
+  color: rgba(255, 255, 255, 0.82);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  transition: background-color var(--et-transition), color var(--et-transition);
+}
+
+.navbar-ecoterra .nav-link:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.navbar-ecoterra .nav-link.active {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.18);
+  font-weight: 600;
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  border-radius: 0.6rem;
+  font-weight: 600;
+  transition: background-color var(--et-transition), border-color var(--et-transition),
+              box-shadow var(--et-transition), transform 150ms ease-out;
+}
+
+.btn-success {
+  --bs-btn-bg: var(--et-primary);
+  --bs-btn-border-color: var(--et-primary);
+  --bs-btn-hover-bg: var(--et-primary-hover);
+  --bs-btn-hover-border-color: var(--et-primary-hover);
+  --bs-btn-active-bg: var(--et-primary-dark);
+  --bs-btn-active-border-color: var(--et-primary-dark);
+}
+
+.btn-success:hover {
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.30);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Touch target mínimo 44px en móvil */
+@media (max-width: 768px) {
+  .btn, .form-control, .form-select {
+    min-height: 44px;
+  }
+  .btn-sm {
+    min-height: 38px;
+  }
+}
+
+/* ---------- Tarjetas ---------- */
+.card {
+  border: 1px solid var(--et-border);
+  border-radius: var(--et-radius);
+  box-shadow: var(--et-shadow-sm);
+  transition: box-shadow var(--et-transition);
+}
+
+.card.shadow-sm:hover {
+  box-shadow: var(--et-shadow-md);
+}
+
+/* KPI cards */
 .card-kpi {
-  border-left: 4px solid var(--ecoterra-green);
+  border-left: 4px solid var(--et-primary);
+  background: var(--et-surface);
+}
+
+.card-kpi > .card-body > .text-muted {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--et-muted) !important;
 }
 
 .card-kpi .kpi-value {
   font-size: 1.75rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums; /* evita saltos de layout en cifras */
+}
+
+/* ---------- Tabs ---------- */
+.nav-tabs {
+  border-bottom-color: var(--et-border);
+}
+
+.nav-tabs .nav-link {
+  color: var(--et-muted);
+  font-weight: 600;
+  border: none;
+  border-bottom: 3px solid transparent;
+  transition: color var(--et-transition), border-color var(--et-transition);
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--et-primary-hover);
+  border-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--et-primary-dark);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid var(--et-primary);
+}
+
+.tab-content {
+  border-color: var(--et-border) !important;
+  border-radius: 0 0 var(--et-radius) var(--et-radius) !important;
+}
+
+/* ---------- Tablas ---------- */
+.table {
+  --bs-table-hover-bg: #f0f9f5;
 }
 
 .table > :not(caption) > * > * {
   vertical-align: middle;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
 }
 
+.table thead th {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--et-muted);
+  border-bottom: 2px solid var(--et-border);
+}
+
+.table tbody {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Badges de estado ---------- */
+.badge {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.4em 0.7em;
+  border-radius: 0.45rem;
+}
+
+.badge.text-bg-success { background-color: #d1fae5 !important; color: #065f46 !important; }
+.badge.text-bg-danger  { background-color: #fee2e2 !important; color: #991b1b !important; }
+.badge.text-bg-warning { background-color: #fef3c7 !important; color: #92400e !important; }
+.badge.text-bg-info    { background-color: #e0f2fe !important; color: #075985 !important; }
+.badge.text-bg-secondary { background-color: #e2e8f0 !important; color: #475569 !important; }
+.badge.text-bg-primary { background-color: #dbeafe !important; color: #1e40af !important; }
+
+/* ---------- Formularios ---------- */
+.form-control, .form-select {
+  border-color: var(--et-border);
+  border-radius: 0.6rem;
+  transition: border-color var(--et-transition), box-shadow var(--et-transition);
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--et-primary);
+  box-shadow: 0 0 0 0.25rem rgba(5, 150, 105, 0.15);
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--et-foreground);
+  margin-bottom: 0.35rem;
+}
+
+/* ---------- Modales ---------- */
+.modal-content {
+  border: none;
+  border-radius: var(--et-radius);
+  box-shadow: 0 20px 50px rgba(6, 78, 59, 0.25);
+}
+
+.modal-header {
+  border-bottom-color: var(--et-border);
+}
+
+.modal-backdrop.show {
+  opacity: 0.5; /* scrim 50% para aislar el contenido */
+}
+
+/* ---------- Alertas ---------- */
+.alert {
+  border-radius: var(--et-radius);
+  border-width: 0 0 0 4px;
+}
+
+/* ---------- Login ---------- */
+.login-page {
+  background:
+    radial-gradient(60rem 30rem at 110% -10%, rgba(5, 150, 105, 0.14), transparent 60%),
+    radial-gradient(50rem 28rem at -20% 110%, rgba(6, 95, 70, 0.12), transparent 60%),
+    var(--et-background);
+}
+
+.login-brand-icon {
+  width: 64px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, var(--et-primary-dark), var(--et-primary));
+  color: #fff;
+  font-size: 1.75rem;
+  box-shadow: var(--et-shadow-md);
+}
+
+/* ---------- Gráficas ---------- */
 .chart-box {
   position: relative;
   min-height: 280px;
+}
+
+/* ---------- Toasts ---------- */
+.toast {
+  border-radius: 0.6rem;
+  box-shadow: var(--et-shadow-md);
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
