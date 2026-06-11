@@ -8,7 +8,14 @@ import usersRouter from './routes/users.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
+// FRONTEND_URL: uno o varios orígenes separados por coma.
+// Se normalizan barras finales (https://app.netlify.app/ === https://app.netlify.app)
+const allowedOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((o) => o.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : '*' }));
 app.use(express.json());
 
 // Healthcheck (Render lo usa, también sirve para "despertar" el free tier)
