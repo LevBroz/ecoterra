@@ -94,6 +94,16 @@ Decisiones clave:
   `POST /api/fees/generate` es respaldo manual.
 - `payments.fee_id` es opcional: permite pagos libres (abonos) además de pago
   de cuota específica. Al pagar con `fee_id`, el backend marca la cuota `paid`.
+- Anuncios: vigencia (`starts_at`/`ends_at` null = no expira, `active`),
+  imagen opcional (`image_url`, bucket público `announcements`). Lecturas por
+  usuario en `announcement_reads` (no leído = expandido + badge; leído =
+  minimizado). Solo admin borra anuncios.
+- Reservas exigen formulario lleno adjunto (`form_url`, bucket privado
+  `attachments`, residente sube, admin lee con signed URL). Las plantillas
+  viven en la tabla `forms` + bucket público `forms` (admin las gestiona).
+- "Notificaciones" son in-app (badges + polling), no Web Push: residente ve
+  badge de anuncios no leídos; admin ve badge de reservas pendientes (60s);
+  vigilante recibe globo + sonido WebAudio al caer visita nueva (20s).
 
 ## Diseño visual
 
@@ -132,7 +142,10 @@ No hay tests todavía. Verificación: `node --check backend/src/server.js`.
 1. Crear proyecto en Supabase → SQL Editor → ejecutar `01` a `06` en orden
    (`06_storage.sql` crea el bucket privado `receipts` para facturas: solo
    admin sube, autenticados leen vía signed URLs de 5 min).
-2. Habilitar extensión `pg_cron` y programar los dos jobs (ver final de `02_functions.sql`).
+2. Habilitar extensión `pg_cron` y programar los jobs: `generate_monthly_fees`
+   y `mark_overdue_fees` (final de `02_functions.sql`) + `cleanup_delivery_visits`
+   cada 10 min (final de la sección 5 de `07_updates.sql` — borra deliveries:
+   3h sin resolver, 30min después de resueltos).
 3. Authentication → crear primer usuario admin → insertar su fila en `profiles` con `role='admin'`.
 4. Copiar URL + anon key a `frontend/assets/js/config.js`; URL + service_role a `backend/.env`.
 5. Deploy: repo a GitHub → Netlify (autodetecta `netlify.toml`) → Render (blueprint `render.yaml`, configurar env vars).

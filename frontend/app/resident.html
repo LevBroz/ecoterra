@@ -37,15 +37,18 @@
     </div>
 
     <ul class="nav nav-tabs" role="tablist">
-      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-fees">Mis cuotas</button></li>
+      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-announcements">
+        Anuncios <span class="badge rounded-pill text-bg-danger d-none" id="ann-badge"></span>
+      </button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-fees">Mis cuotas</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-payments">Historial de pagos</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-visits">Visitas y delivery</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-reservations">Reservas</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-announcements">Anuncios</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-forms">Formularios</button></li>
     </ul>
 
     <div class="tab-content bg-white border border-top-0 rounded-bottom p-3 shadow-sm">
-      <div class="tab-pane fade show active" id="tab-fees">
+      <div class="tab-pane fade" id="tab-fees">
         <div class="table-responsive">
           <table class="table table-hover">
             <thead><tr><th>Período</th><th>Concepto</th><th>Monto</th><th>Vence</th><th>Estado</th></tr></thead>
@@ -93,8 +96,17 @@
         </div>
       </div>
 
-      <div class="tab-pane fade" id="tab-announcements">
+      <div class="tab-pane fade show active" id="tab-announcements">
         <div id="announcements-list"></div>
+        <h6 class="text-muted mt-4 mb-2" id="read-announcements-title" hidden>Leídos</h6>
+        <div id="announcements-read-list"></div>
+      </div>
+
+      <div class="tab-pane fade" id="tab-forms">
+        <p class="text-muted">
+          Descarga el formulario de la actividad, llénalo y adjúntalo al crear tu reserva.
+        </p>
+        <div id="forms-list" class="row g-3"></div>
       </div>
     </div>
   </main>
@@ -169,6 +181,15 @@
             <div class="col mb-3">
               <label class="form-label">Hasta</label>
               <input type="time" class="form-control" id="res-end" required />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Formulario lleno <span class="text-danger">*</span></label>
+            <input type="file" class="form-control" id="res-form-file" required
+                   accept="application/pdf,image/jpeg,image/png,image/webp" />
+            <div class="form-text">
+              Obligatorio: descarga el formato en la pestaña <strong>Formularios</strong>,
+              llénalo y adjúntalo (PDF o foto, máx 10 MB).
             </div>
           </div>
         </div>

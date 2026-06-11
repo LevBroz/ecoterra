@@ -44,9 +44,12 @@
     <ul class="nav nav-tabs" role="tablist">
       <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-morosidad">Morosidad</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pagos">Registrar pago</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-reservas">Reservas</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-reservas">
+        Reservas <span class="badge rounded-pill text-bg-danger d-none" id="res-badge"></span>
+      </button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-anuncios">Anuncios</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gastos">Gastos / Inversiones</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-formularios">Formularios</button></li>
     </ul>
 
     <div class="tab-content bg-white border border-top-0 rounded-bottom p-3 shadow-sm">
@@ -111,7 +114,7 @@
       <div class="tab-pane fade" id="tab-reservas">
         <div class="table-responsive">
           <table class="table table-hover">
-            <thead><tr><th>Fecha</th><th>Casa</th><th>Zona</th><th>Evento</th><th>Horario</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Casa</th><th>Zona</th><th>Evento</th><th>Horario</th><th>Formulario</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody id="reservations-body"></tbody>
           </table>
         </div>
@@ -119,22 +122,77 @@
 
       <!-- Anuncios -->
       <div class="tab-pane fade" id="tab-anuncios">
-        <form id="announcement-form" class="mb-4" style="max-width: 720px;">
-          <div class="mb-3">
+        <form id="announcement-form" class="row g-3 mb-4" style="max-width: 720px;">
+          <div class="col-12">
             <label class="form-label">Título</label>
             <input type="text" class="form-control" id="ann-title" required />
           </div>
-          <div class="mb-3">
+          <div class="col-12">
             <label class="form-label">Contenido</label>
             <textarea class="form-control" id="ann-body" rows="3" required></textarea>
           </div>
-          <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" id="ann-pinned" />
-            <label class="form-check-label" for="ann-pinned">Fijar arriba</label>
+          <div class="col-12">
+            <label class="form-label">Imagen (opcional, tipo post)</label>
+            <input type="file" class="form-control" id="ann-image" accept="image/jpeg,image/png,image/webp" />
+            <div class="form-text">JPG, PNG o WebP. Máximo 5 MB.</div>
           </div>
-          <button type="submit" class="btn btn-success"><i class="bi bi-megaphone"></i> Publicar</button>
+          <div class="col-md-4">
+            <label class="form-label">Inicio de vigencia</label>
+            <input type="date" class="form-control" id="ann-start" required />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Fin de vigencia</label>
+            <input type="date" class="form-control" id="ann-end" />
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="ann-noexpire" checked />
+                <label class="form-check-label" for="ann-noexpire">No expira</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="ann-pinned" />
+                <label class="form-check-label" for="ann-pinned">Fijar arriba</label>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-success" id="ann-submit"><i class="bi bi-megaphone"></i> Publicar</button>
+          </div>
         </form>
         <div id="announcements-list"></div>
+      </div>
+
+      <!-- Formularios (plantillas para residentes) -->
+      <div class="tab-pane fade" id="tab-formularios">
+        <form id="form-template-form" class="row g-3 mb-4" style="max-width: 720px;">
+          <div class="col-md-6">
+            <label class="form-label">Nombre de la actividad</label>
+            <input type="text" class="form-control" id="ft-name" required
+                   placeholder="Ej. Solicitud de salón de eventos" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Archivo (PDF o Word)</label>
+            <input type="file" class="form-control" id="ft-file" required
+                   accept="application/pdf,.doc,.docx" />
+          </div>
+          <div class="col-12">
+            <label class="form-label">Descripción</label>
+            <input type="text" class="form-control" id="ft-description"
+                   placeholder="Instrucciones breves para el residente" />
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-success" id="ft-submit">
+              <i class="bi bi-file-earmark-arrow-up"></i> Publicar formulario
+            </button>
+          </div>
+        </form>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead><tr><th>Nombre</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="forms-body"></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Gastos / Inversiones -->

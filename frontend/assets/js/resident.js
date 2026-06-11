@@ -108,21 +108,84 @@ async function loadReservations() {
 }
 
 async function loadAnnouncements() {
+  // announcement_reads viene filtrado por RLS a las lecturas del usuario actual
   const { data, error } = await supabase
     .from('announcements')
-    .select('*')
+    .select('*, announcement_reads(user_id)')
     .order('pinned', { ascending: false })
     .order('published_at', { ascending: false })
-    .limit(20);
+    .limit(50);
   if (error) return;
-  document.getElementById('announcements-list').innerHTML = data.map((a) => `
-    <div class="card mb-2 ${a.pinned ? 'border-success' : ''}">
+
+  const unread = data.filter((a) => !a.announcement_reads.length);
+  const read = data.filter((a) => a.announcement_reads.length);
+
+  // Badge de no leídos en la pestaña
+  const badge = document.getElementById('ann-badge');
+  badge.textContent = unread.length;
+  badge.classList.toggle('d-none', unread.length === 0);
+
+  // No leídos: post completo estilo feed
+  document.getElementById('announcements-list').innerHTML = unread.map((a) => `
+    <div class="card mb-3 ${a.pinned ? 'border-success' : ''}">
+      ${a.image_url ? `<img src="${a.image_url}" class="card-img-top" alt="" style="max-height:360px;object-fit:cover;" loading="lazy" />` : ''}
       <div class="card-body">
         <h6 class="card-title">${a.pinned ? '<i class="bi bi-pin-angle-fill text-success"></i> ' : ''}${a.title}</h6>
-        <p class="card-text">${a.body}</p>
-        <small class="text-muted">${fmtDate(a.published_at.slice(0, 10))}</small>
+        <p class="card-text" style="white-space:pre-line;">${a.body}</p>
+        <div class="d-flex justify-content-between align-items-center">
+          <small class="text-muted">${fmtDate(a.published_at.slice(0, 10))}</small>
+          <button class="btn btn-outline-success btn-sm" data-mark-read="${a.id}">
+            <i class="bi bi-check2"></i> Marcar como leído
+          </button>
+        </div>
       </div>
-    </div>`).join('') || '<p class="text-muted">Sin anuncios.</p>';
+    </div>`).join('') || '<p class="text-muted">No tienes anuncios sin leer.</p>';
+
+  // Leídos: minimizados (expandibles, no se borran)
+  document.getElementById('read-announcements-title').hidden = read.length === 0;
+  document.getElementById('announcements-read-list').innerHTML = read.map((a) => `
+    <details class="card mb-2">
+      <summary class="card-body py-2 text-muted" style="cursor:pointer;">
+        <i class="bi bi-envelope-open"></i> ${a.title}
+        <small class="ms-2">${fmtDate(a.published_at.slice(0, 10))}</small>
+      </summary>
+      <div class="card-body pt-0">
+        ${a.image_url ? `<img src="${a.image_url}" class="img-fluid rounded mb-2" alt="" loading="lazy" />` : ''}
+        <p class="card-text" style="white-space:pre-line;">${a.body}</p>
+      </div>
+    </details>`).join('');
+}
+
+document.getElementById('announcements-list').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-mark-read]');
+  if (!btn) return;
+  const { error } = await supabase.from('announcement_reads').insert({
+    announcement_id: btn.dataset.markRead,
+    user_id: profile.id,
+  });
+  if (error) return toast('No se pudo marcar como leído', 'danger');
+  loadAnnouncements();
+});
+
+// ----- Formularios descargables -----
+async function loadForms() {
+  const { data } = await supabase
+    .from('forms')
+    .select('*')
+    .eq('active', true)
+    .order('name');
+  document.getElementById('forms-list').innerHTML = (data || []).map((f) => `
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column">
+          <h6 class="card-title"><i class="bi bi-file-earmark-text"></i> ${f.name}</h6>
+          <p class="card-text text-muted small flex-grow-1">${f.description || ''}</p>
+          <a class="btn btn-outline-success btn-sm" href="${f.file_url}" target="_blank" download>
+            <i class="bi bi-download"></i> Descargar
+          </a>
+        </div>
+      </div>
+    </div>`).join('') || '<p class="text-muted">Aún no hay formularios publicados.</p>';
 }
 
 async function loadAmenities() {
@@ -154,25 +217,42 @@ document.getElementById('visit-form').addEventListener('submit', async (e) => {
   loadVisits();
 });
 
-// ----- Nueva reserva -----
+// ----- Nueva reserva (formulario lleno obligatorio) -----
 document.getElementById('reservation-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const { error } = await supabase.from('reservations').insert({
-    amenity_id: document.getElementById('res-amenity').value,
-    house_id: profile.house_id,
-    event_name: document.getElementById('res-event').value.trim(),
-    date: document.getElementById('res-date').value,
-    start_time: document.getElementById('res-start').value,
-    end_time: document.getElementById('res-end').value,
-  });
-  if (error) {
-    toast(isCurrent ? 'Error al crear reserva' : 'Debes estar al día para reservar', 'danger');
-    return;
+  const file = document.getElementById('res-form-file').files[0];
+  if (!file) return toast('Debes adjuntar el formulario lleno', 'danger');
+  if (file.size > 10 * 1024 * 1024) return toast('El archivo no puede superar 10 MB', 'danger');
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  try {
+    const safeName = file.name.replace(/[^\w.\-]/g, '_');
+    const path = `reservations/${profile.house_id}/${Date.now()}-${safeName}`;
+    const { error: upErr } = await supabase.storage.from('attachments').upload(path, file);
+    if (upErr) throw new Error('No se pudo subir el formulario: ' + upErr.message);
+
+    const { error } = await supabase.from('reservations').insert({
+      amenity_id: document.getElementById('res-amenity').value,
+      house_id: profile.house_id,
+      event_name: document.getElementById('res-event').value.trim(),
+      date: document.getElementById('res-date').value,
+      start_time: document.getElementById('res-start').value,
+      end_time: document.getElementById('res-end').value,
+      form_url: path,
+    });
+    if (error) {
+      throw new Error(isCurrent ? 'Error al crear reserva' : 'Debes estar al día para reservar');
+    }
+    bootstrap.Modal.getInstance(document.getElementById('reservation-modal')).hide();
+    e.target.reset();
+    toast('Reserva solicitada, pendiente de aprobación');
+    loadReservations();
+  } catch (err) {
+    toast(err.message, 'danger');
+  } finally {
+    submitBtn.disabled = false;
   }
-  bootstrap.Modal.getInstance(document.getElementById('reservation-modal')).hide();
-  e.target.reset();
-  toast('Reserva solicitada, pendiente de aprobación');
-  loadReservations();
 });
 
 // ----- Cancelaciones -----
@@ -195,5 +275,5 @@ document.getElementById('visit-date').valueAsDate = new Date();
 
 await Promise.all([
   loadAccountSummary(), loadFees(), loadPayments(),
-  loadVisits(), loadReservations(), loadAnnouncements(), loadAmenities(),
+  loadVisits(), loadReservations(), loadAnnouncements(), loadAmenities(), loadForms(),
 ]);

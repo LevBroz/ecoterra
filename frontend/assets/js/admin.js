@@ -53,6 +53,11 @@ async function loadKpis() {
   ]);
   document.getElementById('kpi-pending-res').textContent = pendingRes ?? 0;
   document.getElementById('kpi-visits-today').textContent = visitsToday ?? 0;
+
+  // Badge persistente en la pestaña Reservas: visible hasta aprobar/denegar todas
+  const badge = document.getElementById('res-badge');
+  badge.textContent = pendingRes ?? 0;
+  badge.classList.toggle('d-none', !pendingRes);
 }
 
 // ----- Registrar pago -----
@@ -116,19 +121,35 @@ async function loadReservations() {
     .order('date', { ascending: false })
     .limit(50);
   if (error) return;
+  // Pendientes arriba: no desaparecen hasta aprobar/denegar
+  data.sort((a, b) => (a.status === 'pending' ? -1 : 1) - (b.status === 'pending' ? -1 : 1));
   document.getElementById('reservations-body').innerHTML = data.map((r) => `
-    <tr>
+    <tr class="${r.status === 'pending' ? 'table-warning' : ''}">
       <td>${fmtDate(r.date)}</td><td>${r.houses?.code}</td><td>${r.amenities?.name}</td>
       <td>${r.event_name}</td><td>${r.start_time.slice(0, 5)}–${r.end_time.slice(0, 5)}</td>
+      <td>${r.form_url
+        ? `<button class="btn btn-outline-success btn-sm" data-res-form="${r.form_url}" title="Ver formulario">
+             <i class="bi bi-file-earmark-text"></i> Ver
+           </button>`
+        : '<span class="text-muted small">—</span>'}</td>
       <td>${badge(r.status)}</td>
       <td>${r.status === 'pending' ? `
         <button class="btn btn-success btn-sm" data-res-action="approved" data-id="${r.id}">Aprobar</button>
         <button class="btn btn-outline-danger btn-sm" data-res-action="rejected" data-id="${r.id}">Rechazar</button>` : ''}
       </td>
-    </tr>`).join('') || '<tr><td colspan="7" class="text-muted">Sin reservas.</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="8" class="text-muted">Sin reservas.</td></tr>';
 }
 
 document.getElementById('reservations-body').addEventListener('click', async (e) => {
+  const formBtn = e.target.closest('button[data-res-form]');
+  if (formBtn) {
+    const { data, error } = await supabase.storage
+      .from('attachments')
+      .createSignedUrl(formBtn.dataset.resForm, 300);
+    if (error) return toast('No se pudo abrir el formulario', 'danger');
+    return window.open(data.signedUrl, '_blank');
+  }
+
   const btn = e.target.closest('button[data-res-action]');
   if (!btn) return;
   const { error } = await supabase
@@ -141,47 +162,170 @@ document.getElementById('reservations-body').addEventListener('click', async (e)
 });
 
 // ----- Anuncios -----
+function vigencia(a) {
+  if (!a.active) return '<span class="badge text-bg-secondary">Desactivado</span>';
+  const today = new Date().toISOString().slice(0, 10);
+  if (a.starts_at > today) return `<span class="badge text-bg-info">Inicia ${fmtDate(a.starts_at)}</span>`;
+  if (a.ends_at && a.ends_at < today) return '<span class="badge text-bg-secondary">Expirado</span>';
+  return a.ends_at
+    ? `<span class="badge text-bg-success">Vigente hasta ${fmtDate(a.ends_at)}</span>`
+    : '<span class="badge text-bg-success">Vigente · no expira</span>';
+}
+
 async function loadAnnouncements() {
   const { data } = await supabase
     .from('announcements')
     .select('*')
     .order('published_at', { ascending: false })
-    .limit(20);
+    .limit(30);
   document.getElementById('announcements-list').innerHTML = (data || []).map((a) => `
-    <div class="card mb-2">
-      <div class="card-body d-flex justify-content-between">
-        <div>
+    <div class="card mb-2 ${a.active ? '' : 'opacity-50'}">
+      <div class="card-body d-flex justify-content-between gap-3">
+        ${a.image_url ? `<img src="${a.image_url}" alt="" class="rounded" style="width:72px;height:72px;object-fit:cover;" />` : ''}
+        <div class="flex-grow-1">
           <h6>${a.pinned ? '<i class="bi bi-pin-angle-fill text-success"></i> ' : ''}${a.title}</h6>
           <p class="mb-1">${a.body}</p>
-          <small class="text-muted">${fmtDate(a.published_at.slice(0, 10))}</small>
+          <small class="text-muted">${fmtDate(a.published_at.slice(0, 10))}</small> ${vigencia(a)}
         </div>
-        <button class="btn btn-outline-danger btn-sm align-self-start" data-del-ann="${a.id}">
-          <i class="bi bi-trash"></i>
-        </button>
+        <div class="d-flex flex-column gap-1 align-self-start">
+          <button class="btn btn-outline-secondary btn-sm" data-toggle-ann="${a.id}" data-active="${a.active}"
+                  title="${a.active ? 'Desactivar' : 'Activar'}">
+            <i class="bi bi-${a.active ? 'eye-slash' : 'eye'}"></i>
+          </button>
+          <button class="btn btn-outline-danger btn-sm" data-del-ann="${a.id}" title="Eliminar">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
       </div>
     </div>`).join('') || '<p class="text-muted">Sin anuncios.</p>';
 }
 
+// "No expira" deshabilita la fecha fin
+document.getElementById('ann-noexpire').addEventListener('change', (e) => {
+  const end = document.getElementById('ann-end');
+  end.disabled = e.target.checked;
+  if (e.target.checked) end.value = '';
+});
+document.getElementById('ann-end').disabled = true;
+
 document.getElementById('announcement-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const { error } = await supabase.from('announcements').insert({
-    title: document.getElementById('ann-title').value.trim(),
-    body: document.getElementById('ann-body').value.trim(),
-    pinned: document.getElementById('ann-pinned').checked,
-    author_id: profile.id,
-  });
-  if (error) return toast('Error al publicar', 'danger');
-  toast('Anuncio publicado');
-  e.target.reset();
-  loadAnnouncements();
+  const btn = document.getElementById('ann-submit');
+  const imgFile = document.getElementById('ann-image').files[0];
+  const noExpire = document.getElementById('ann-noexpire').checked;
+  const endsAt = document.getElementById('ann-end').value;
+
+  if (imgFile && imgFile.size > 5 * 1024 * 1024) {
+    return toast('La imagen no puede superar 5 MB', 'danger');
+  }
+  if (!noExpire && !endsAt) {
+    return toast('Indica fecha de fin o marca "No expira"', 'danger');
+  }
+
+  btn.disabled = true;
+  try {
+    let imageUrl = null;
+    if (imgFile) {
+      const path = `${Date.now()}-${imgFile.name.replace(/[^\w.\-]/g, '_')}`;
+      const { error: upErr } = await supabase.storage.from('announcements').upload(path, imgFile);
+      if (upErr) throw new Error('No se pudo subir la imagen');
+      imageUrl = supabase.storage.from('announcements').getPublicUrl(path).data.publicUrl;
+    }
+
+    const { error } = await supabase.from('announcements').insert({
+      title: document.getElementById('ann-title').value.trim(),
+      body: document.getElementById('ann-body').value.trim(),
+      pinned: document.getElementById('ann-pinned').checked,
+      image_url: imageUrl,
+      starts_at: document.getElementById('ann-start').value,
+      ends_at: noExpire ? null : endsAt,
+      author_id: profile.id,
+    });
+    if (error) throw new Error('Error al publicar');
+    toast('Anuncio publicado');
+    e.target.reset();
+    document.getElementById('ann-start').valueAsDate = new Date();
+    document.getElementById('ann-end').disabled = true;
+    loadAnnouncements();
+  } catch (err) {
+    toast(err.message, 'danger');
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 document.getElementById('announcements-list').addEventListener('click', async (e) => {
+  const toggleBtn = e.target.closest('button[data-toggle-ann]');
+  if (toggleBtn) {
+    await supabase.from('announcements')
+      .update({ active: toggleBtn.dataset.active !== 'true' })
+      .eq('id', toggleBtn.dataset.toggleAnn);
+    toast(toggleBtn.dataset.active === 'true' ? 'Anuncio desactivado' : 'Anuncio activado');
+    return loadAnnouncements();
+  }
   const btn = e.target.closest('button[data-del-ann]');
   if (!btn) return;
+  if (!confirm('¿Eliminar este anuncio definitivamente? Los residentes dejarán de verlo.')) return;
   await supabase.from('announcements').delete().eq('id', btn.dataset.delAnn);
   toast('Anuncio eliminado');
   loadAnnouncements();
+});
+
+// ----- Formularios (plantillas) -----
+async function loadFormTemplates() {
+  const { data } = await supabase.from('forms').select('*').order('created_at', { ascending: false });
+  document.getElementById('forms-body').innerHTML = (data || []).map((f) => `
+    <tr class="${f.active ? '' : 'opacity-50'}">
+      <td><a href="${f.file_url}" target="_blank">${f.name}</a></td>
+      <td>${f.description || '—'}</td>
+      <td>${f.active
+        ? '<span class="badge text-bg-success">Publicado</span>'
+        : '<span class="badge text-bg-secondary">Oculto</span>'}</td>
+      <td>
+        <button class="btn btn-outline-secondary btn-sm" data-toggle-form="${f.id}" data-active="${f.active}">
+          ${f.active ? 'Ocultar' : 'Publicar'}
+        </button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="4" class="text-muted">Sin formularios.</td></tr>';
+}
+
+document.getElementById('form-template-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('ft-submit');
+  const file = document.getElementById('ft-file').files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) return toast('Máximo 10 MB', 'danger');
+
+  btn.disabled = true;
+  try {
+    const path = `${Date.now()}-${file.name.replace(/[^\w.\-]/g, '_')}`;
+    const { error: upErr } = await supabase.storage.from('forms').upload(path, file);
+    if (upErr) throw new Error('No se pudo subir el archivo');
+    const fileUrl = supabase.storage.from('forms').getPublicUrl(path).data.publicUrl;
+
+    const { error } = await supabase.from('forms').insert({
+      name: document.getElementById('ft-name').value.trim(),
+      description: document.getElementById('ft-description').value.trim() || null,
+      file_url: fileUrl,
+    });
+    if (error) throw new Error('Error al publicar el formulario');
+    toast('Formulario publicado');
+    e.target.reset();
+    loadFormTemplates();
+  } catch (err) {
+    toast(err.message, 'danger');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('forms-body').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-toggle-form]');
+  if (!btn) return;
+  await supabase.from('forms')
+    .update({ active: btn.dataset.active !== 'true' })
+    .eq('id', btn.dataset.toggleForm);
+  loadFormTemplates();
 });
 
 // ----- Gastos / inversiones -----
@@ -262,8 +406,12 @@ document.getElementById('tx-body').addEventListener('click', async (e) => {
 
 document.getElementById('pay-date').valueAsDate = new Date();
 document.getElementById('tx-date').valueAsDate = new Date();
+document.getElementById('ann-start').valueAsDate = new Date();
 
 await Promise.all([
   loadDelinquency(), loadKpis(), loadHouses(),
-  loadReservations(), loadAnnouncements(), loadTransactions(),
+  loadReservations(), loadAnnouncements(), loadTransactions(), loadFormTemplates(),
 ]);
+
+// Refrescar badge de reservas pendientes cada 60s
+setInterval(() => { loadKpis(); loadReservations(); }, 60000);

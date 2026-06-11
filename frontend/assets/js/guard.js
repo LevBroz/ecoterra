@@ -13,6 +13,46 @@ document.getElementById('logout-btn').addEventListener('click', logout);
 
 let allVisits = [];
 const paymentStatusCache = new Map(); // house_id -> boolean
+let knownVisitIds = null; // null = primera carga (no notificar lo ya existente)
+
+// Sonido de notificación: dos tonos cortos con WebAudio (sin archivos)
+function playAlertSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[880, 0], [1175, 0.18]].forEach(([freq, delay]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.25);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.3);
+    });
+  } catch { /* sin audio si el navegador lo bloquea */ }
+}
+
+function notifyNewVisits(visits) {
+  if (knownVisitIds === null) {
+    // primera carga: registrar sin notificar
+    knownVisitIds = new Set(visits.map((v) => v.id));
+    return;
+  }
+  const fresh = visits.filter((v) => !knownVisitIds.has(v.id) && v.status === 'announced');
+  visits.forEach((v) => knownVisitIds.add(v.id));
+  if (!fresh.length) return;
+
+  playAlertSound();
+  fresh.forEach((v) => {
+    toast(
+      `<i class="bi bi-bell-fill"></i> ${v.type === 'delivery' ? 'Delivery' : 'Visita'} para
+       <strong>${v.houses.code}</strong>: ${v.visitor_name}`,
+      'warning'
+    );
+  });
+}
 
 async function houseIsCurrent(houseId) {
   if (paymentStatusCache.has(houseId)) return paymentStatusCache.get(houseId);
@@ -30,6 +70,7 @@ async function loadVisits() {
     .order('created_at', { ascending: false });
   if (error) return toast('Error cargando visitas', 'danger');
   allVisits = data;
+  notifyNewVisits(data);
   await renderVisits();
 }
 
@@ -120,5 +161,7 @@ document.getElementById('walkin-form').addEventListener('submit', async (e) => {
 });
 
 await Promise.all([loadVisits(), loadHouses()]);
-// Refrescar cada 60s para ver nuevas visitas anunciadas
-setInterval(() => { paymentStatusCache.clear(); loadVisits(); }, 60000);
+// Polling cada 20s: detecta visitas nuevas → globo + sonido.
+// La limpieza de deliveries (3h anunciado / 30min resuelto) la hace
+// cleanup_delivery_visits() vía pg_cron en Supabase.
+setInterval(() => { paymentStatusCache.clear(); loadVisits(); }, 20000);
