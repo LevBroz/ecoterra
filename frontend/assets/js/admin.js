@@ -197,24 +197,67 @@ async function loadTransactions() {
       <td>${t.kind === 'expense' ? 'Gasto' : 'Inversión'}</td>
       <td>${t.category}</td><td>${t.description}</td>
       <td>${fmtMoney(t.amount)}</td>
-    </tr>`).join('') || '<tr><td colspan="5" class="text-muted">Sin registros.</td></tr>';
+      <td>${t.receipt_url
+        ? `<button class="btn btn-outline-success btn-sm" data-receipt="${t.receipt_url}" title="Ver factura">
+             <i class="bi bi-file-earmark-text"></i> Ver
+           </button>`
+        : '<span class="text-muted small">—</span>'}</td>
+    </tr>`).join('') || '<tr><td colspan="6" class="text-muted">Sin registros.</td></tr>';
+}
+
+// Sube la factura al bucket privado y devuelve su ruta, o null si no hay archivo
+async function uploadReceipt(file) {
+  const safeName = file.name.replace(/[^\w.\-]/g, '_');
+  const path = `${new Date().toISOString().slice(0, 7)}/${Date.now()}-${safeName}`;
+  const { error } = await supabase.storage.from('receipts').upload(path, file);
+  if (error) throw new Error('No se pudo subir la factura: ' + error.message);
+  return path;
 }
 
 document.getElementById('tx-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const { error } = await supabase.from('transactions').insert({
-    kind: document.getElementById('tx-kind').value,
-    category: document.getElementById('tx-category').value,
-    description: document.getElementById('tx-description').value.trim(),
-    amount: Number(document.getElementById('tx-amount').value),
-    tx_date: document.getElementById('tx-date').value,
-    created_by: profile.id,
-  });
-  if (error) return toast('Error al registrar', 'danger');
-  toast('Registrado');
-  e.target.reset();
-  document.getElementById('tx-date').valueAsDate = new Date();
-  loadTransactions();
+  const btn = document.getElementById('tx-submit');
+  const file = document.getElementById('tx-receipt').files[0];
+
+  if (file && file.size > 5 * 1024 * 1024) {
+    return toast('La factura no puede superar 5 MB', 'danger');
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Registrando…';
+  try {
+    const receiptPath = file ? await uploadReceipt(file) : null;
+    const { error } = await supabase.from('transactions').insert({
+      kind: document.getElementById('tx-kind').value,
+      category: document.getElementById('tx-category').value,
+      description: document.getElementById('tx-description').value.trim(),
+      amount: Number(document.getElementById('tx-amount').value),
+      tx_date: document.getElementById('tx-date').value,
+      receipt_url: receiptPath,
+      created_by: profile.id,
+    });
+    if (error) throw new Error('Error al registrar el gasto');
+    toast('Registrado' + (receiptPath ? ' con factura adjunta' : ''));
+    e.target.reset();
+    document.getElementById('tx-date').valueAsDate = new Date();
+    loadTransactions();
+  } catch (err) {
+    toast(err.message, 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-receipt"></i> Registrar';
+  }
+});
+
+// Abrir factura con URL firmada (bucket privado, expira en 5 min)
+document.getElementById('tx-body').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-receipt]');
+  if (!btn) return;
+  const { data, error } = await supabase.storage
+    .from('receipts')
+    .createSignedUrl(btn.dataset.receipt, 300);
+  if (error) return toast('No se pudo abrir la factura', 'danger');
+  window.open(data.signedUrl, '_blank');
 });
 
 document.getElementById('pay-date').valueAsDate = new Date();

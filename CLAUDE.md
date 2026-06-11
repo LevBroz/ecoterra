@@ -129,7 +129,9 @@ No hay tests todavía. Verificación: `node --check backend/src/server.js`.
 
 ## Setup inicial (una vez)
 
-1. Crear proyecto en Supabase → SQL Editor → ejecutar `01` a `04` en orden.
+1. Crear proyecto en Supabase → SQL Editor → ejecutar `01` a `06` en orden
+   (`06_storage.sql` crea el bucket privado `receipts` para facturas: solo
+   admin sube, autenticados leen vía signed URLs de 5 min).
 2. Habilitar extensión `pg_cron` y programar los dos jobs (ver final de `02_functions.sql`).
 3. Authentication → crear primer usuario admin → insertar su fila en `profiles` con `role='admin'`.
 4. Copiar URL + anon key a `frontend/assets/js/config.js`; URL + service_role a `backend/.env`.

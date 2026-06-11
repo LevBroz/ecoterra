@@ -173,12 +173,18 @@
             <input type="date" class="form-control" id="tx-date" required />
           </div>
           <div class="col-12">
-            <button type="submit" class="btn btn-success"><i class="bi bi-receipt"></i> Registrar</button>
+            <label class="form-label">Factura / comprobante (opcional)</label>
+            <input type="file" class="form-control" id="tx-receipt"
+                   accept="image/jpeg,image/png,image/webp,application/pdf" />
+            <div class="form-text">JPG, PNG, WebP o PDF. Máximo 5 MB. Visible para los residentes en Transparencia.</div>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-success" id="tx-submit"><i class="bi bi-receipt"></i> Registrar</button>
           </div>
         </form>
         <div class="table-responsive">
           <table class="table table-hover">
-            <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th>Factura</th></tr></thead>
             <tbody id="tx-body"></tbody>
           </table>
         </div>

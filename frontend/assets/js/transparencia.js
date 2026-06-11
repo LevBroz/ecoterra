@@ -131,8 +131,24 @@ async function loadAll() {
         : '<span class="badge text-bg-primary">Inversión</span>'}</td>
       <td>${t.category}</td><td>${t.description}</td>
       <td class="text-end">${fmtMoney(t.amount)}</td>
-    </tr>`).join('') || '<tr><td colspan="5" class="text-muted">Sin movimientos en el período.</td></tr>';
+      <td>${t.receipt_url
+        ? `<button class="btn btn-outline-success btn-sm" data-receipt="${t.receipt_url}" title="Ver factura">
+             <i class="bi bi-file-earmark-text"></i>
+           </button>`
+        : '<span class="text-muted small">—</span>'}</td>
+    </tr>`).join('') || '<tr><td colspan="6" class="text-muted">Sin movimientos en el período.</td></tr>';
 }
+
+// Ver factura adjunta (URL firmada, expira en 5 min)
+document.getElementById('tx-body').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-receipt]');
+  if (!btn) return;
+  const { data, error } = await supabase.storage
+    .from('receipts')
+    .createSignedUrl(btn.dataset.receipt, 300);
+  if (error) return alert('No se pudo abrir la factura');
+  window.open(data.signedUrl, '_blank');
+});
 
 document.getElementById('months-filter').addEventListener('change', loadAll);
 await loadAll();
