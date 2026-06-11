@@ -74,8 +74,8 @@ async function loadAll() {
     data: {
       labels,
       datasets: [
-        { label: 'Ingresos', data: income, backgroundColor: '#059669cc', borderRadius: 4 },
-        { label: 'Gastos', data: expenses, backgroundColor: '#dc2626b3', borderRadius: 4 },
+        { label: 'Ingresos', data: income, backgroundColor: '#7c2d43cc', borderRadius: 4 },
+        { label: 'Gastos', data: expenses, backgroundColor: '#d97706b3', borderRadius: 4 },
       ],
     },
     options: { responsive: true, maintainAspectRatio: false },
@@ -87,8 +87,8 @@ async function loadAll() {
       labels: (byCategory.data || []).map((r) => r.category),
       datasets: [{
         data: (byCategory.data || []).map((r) => Number(r.total)),
-        // Paleta accesible (sin pares rojo/verde puros)
-        backgroundColor: ['#059669', '#0891b2', '#d97706', '#7c3aed', '#475569', '#15803d', '#be185d', '#b45309', '#0d9488'],
+        // Paleta de marca accesible (vino + rosas del logo + contrastes)
+        backgroundColor: ['#7c2d43', '#d49ba6', '#d97706', '#586ba4', '#71606a', '#a8516e', '#0d9488', '#b45309', '#94a3b8'],
       }],
     },
     options: { responsive: true, maintainAspectRatio: false },
@@ -101,8 +101,8 @@ async function loadAll() {
       datasets: [{
         label: 'Tasa de cobranza %',
         data: col.map((r) => Number(r.rate)),
-        borderColor: '#059669',
-        backgroundColor: '#05966922',
+        borderColor: '#7c2d43',
+        backgroundColor: '#7c2d4322',
         tension: 0.3,
         fill: true,
       }],
@@ -117,7 +117,7 @@ async function loadAll() {
     type: 'bar',
     data: {
       labels,
-      datasets: [{ label: 'Inversiones', data: investments, backgroundColor: '#0891b2cc', borderRadius: 4 }],
+      datasets: [{ label: 'Inversiones', data: investments, backgroundColor: '#586ba4cc', borderRadius: 4 }],
     },
     options: { responsive: true, maintainAspectRatio: false },
   });

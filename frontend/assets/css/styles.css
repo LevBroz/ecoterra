@@ -7,30 +7,30 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
 
-/* ---------- Tokens semánticos ---------- */
+/* ---------- Tokens semánticos (paleta del logo eco_logo.jpg) ---------- */
 :root {
-  --et-primary: #059669;        /* verde naturaleza */
-  --et-primary-hover: #047857;
-  --et-primary-dark: #065f46;   /* navbar / superficies de marca */
-  --et-foreground: #064e3b;
-  --et-background: #f6faf8;
+  --et-primary: #7c2d43;        /* vino del logo */
+  --et-primary-hover: #662439;
+  --et-primary-dark: #4a1f2b;   /* borgoña profundo: navbar, superficies de marca */
+  --et-rose: #d49ba6;           /* rosa medio del logo (acentos) */
+  --et-rose-light: #dcc8d6;     /* rosa claro del logo */
+  --et-foreground: #3f1a24;
+  --et-background: #faf6f7;
   --et-surface: #ffffff;
-  --et-muted: #64748b;
-  --et-border: #dbe7e0;
+  --et-muted: #71606a;
+  --et-border: #ead9df;
   --et-warning: #d97706;
   --et-danger: #dc2626;
   --et-radius: 0.75rem;
-  --et-shadow-sm: 0 1px 2px rgba(6, 78, 59, 0.06), 0 1px 3px rgba(6, 78, 59, 0.08);
-  --et-shadow-md: 0 4px 12px rgba(6, 78, 59, 0.10);
+  --et-shadow-sm: 0 1px 2px rgba(74, 31, 43, 0.06), 0 1px 3px rgba(74, 31, 43, 0.08);
+  --et-shadow-md: 0 4px 12px rgba(74, 31, 43, 0.12);
   --et-transition: 200ms ease-out;
 
-  /* Mapear Bootstrap a la marca */
-  --bs-success: var(--et-primary);
-  --bs-success-rgb: 5, 150, 105;
+  /* Mapear Bootstrap a la marca (success de estados sigue verde) */
   --bs-body-font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
-  --bs-body-color: #1e293b;
+  --bs-body-color: #2b2228;
   --bs-body-bg: var(--et-background);
-  --bs-light-rgb: 246, 250, 248;  /* .bg-light = fondo de marca */
+  --bs-light-rgb: 250, 246, 247;  /* .bg-light = fondo de marca */
 }
 
 body {
@@ -48,7 +48,7 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .modal-title, .kpi-value {
 
 /* ---------- Accesibilidad: foco visible ---------- */
 :focus-visible {
-  outline: 3px solid rgba(5, 150, 105, 0.45);
+  outline: 3px solid rgba(124, 45, 67, 0.45);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -66,6 +66,16 @@ button, a, select, [data-bs-toggle], .nav-link {
 .navbar-ecoterra .navbar-brand {
   color: #fff;
   letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  object-fit: cover;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 .navbar-ecoterra .nav-link {
@@ -104,7 +114,18 @@ button, a, select, [data-bs-toggle], .nav-link {
 }
 
 .btn-success:hover {
-  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.30);
+  box-shadow: 0 4px 10px rgba(124, 45, 67, 0.30);
+}
+
+/* Botones outline de acción (Ver factura, etc.) en tono marca */
+.btn-outline-success {
+  --bs-btn-color: var(--et-primary);
+  --bs-btn-border-color: var(--et-rose);
+  --bs-btn-hover-bg: var(--et-primary);
+  --bs-btn-hover-border-color: var(--et-primary);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: var(--et-primary-dark);
+  --bs-btn-active-border-color: var(--et-primary-dark);
 }
 
 .btn:active {
@@ -190,7 +211,7 @@ button, a, select, [data-bs-toggle], .nav-link {
 
 /* ---------- Tablas ---------- */
 .table {
-  --bs-table-hover-bg: #f0f9f5;
+  --bs-table-hover-bg: #faf1f4;
 }
 
 .table > :not(caption) > * > * {
@@ -236,7 +257,7 @@ button, a, select, [data-bs-toggle], .nav-link {
 
 .form-control:focus, .form-select:focus {
   border-color: var(--et-primary);
-  box-shadow: 0 0 0 0.25rem rgba(5, 150, 105, 0.15);
+  box-shadow: 0 0 0 0.25rem rgba(124, 45, 67, 0.15);
 }
 
 .form-label {
@@ -270,21 +291,16 @@ button, a, select, [data-bs-toggle], .nav-link {
 /* ---------- Login ---------- */
 .login-page {
   background:
-    radial-gradient(60rem 30rem at 110% -10%, rgba(5, 150, 105, 0.14), transparent 60%),
-    radial-gradient(50rem 28rem at -20% 110%, rgba(6, 95, 70, 0.12), transparent 60%),
+    radial-gradient(60rem 30rem at 110% -10%, rgba(212, 155, 166, 0.22), transparent 60%),
+    radial-gradient(50rem 28rem at -20% 110%, rgba(124, 45, 67, 0.12), transparent 60%),
     var(--et-background);
 }
 
-.login-brand-icon {
-  width: 64px;
-  height: 64px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 1.25rem;
-  background: linear-gradient(135deg, var(--et-primary-dark), var(--et-primary));
-  color: #fff;
-  font-size: 1.75rem;
+.login-logo {
+  width: 84px;
+  height: 84px;
+  border-radius: 1.4rem;
+  object-fit: cover;
   box-shadow: var(--et-shadow-md);
 }
 

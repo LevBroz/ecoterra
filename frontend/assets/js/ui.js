@@ -55,7 +55,9 @@ export function renderNavbar(profile, links, active) {
   return `
   <nav class="navbar navbar-expand-lg navbar-dark navbar-ecoterra">
     <div class="container-fluid">
-      <span class="navbar-brand fw-bold"><i class="bi bi-tree-fill"></i> EcoTerra</span>
+      <span class="navbar-brand fw-bold">
+        <img src="/assets/img/eco_logo.jpg" alt="" class="navbar-logo me-2" />EcoTerra
+      </span>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
         <span class="navbar-toggler-icon"></span>
       </button>
