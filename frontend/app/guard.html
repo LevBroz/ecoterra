@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EcoTerra · Portería</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="../assets/css/styles.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+  <div id="navbar"></div>
+
+  <main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h4 class="mb-0"><i class="bi bi-shield-check"></i> Portería — visitas de hoy</h4>
+      <div class="d-flex gap-2">
+        <input type="search" class="form-control" id="search" placeholder="Buscar nombre o casa…" style="max-width: 240px;" />
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#walkin-modal">
+          <i class="bi bi-plus-lg"></i> Walk-in
+        </button>
+      </div>
+    </div>
+
+    <div class="alert alert-info py-2 small">
+      <i class="bi bi-info-circle"></i> Solo casas <strong>al día</strong> pueden recibir
+      visitas/delivery anunciados. El estado de pago aparece en cada fila.
+    </div>
+
+    <div class="table-responsive bg-white rounded shadow-sm">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Casa</th><th>Pago</th><th>Tipo</th><th>Nombre</th>
+            <th>Empresa/Placa</th><th>Estado</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="visits-body"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal: visita no anunciada -->
+  <div class="modal fade" id="walkin-modal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+      <form id="walkin-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Registrar visita no anunciada</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Casa destino</label>
+            <select class="form-select" id="walkin-house" required></select>
+            <div class="form-text" id="walkin-house-status"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="walkin-type">
+              <option value="visit">Visita</option>
+              <option value="delivery">Delivery</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="walkin-name" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Empresa / Placa</label>
+            <input type="text" class="form-control" id="walkin-detail" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Resultado</label>
+            <select class="form-select" id="walkin-status">
+              <option value="arrived">Ingresó</option>
+              <option value="denied">Denegada</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Registrar</button>
+        </div>
+      </form>
+    </div></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="../assets/js/guard.js"></script>
+</body>
+</html>

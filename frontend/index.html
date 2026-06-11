@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EcoTerra · Acceso</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="assets/css/styles.css" rel="stylesheet" />
+</head>
+<body class="bg-light d-flex align-items-center" style="min-height: 100vh;">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-sm-8 col-md-5 col-lg-4">
+        <div class="text-center mb-4">
+          <h1 class="h3 fw-bold text-success"><i class="bi bi-tree-fill"></i> EcoTerra</h1>
+          <p class="text-muted">Gestión del residencial</p>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-body p-4">
+            <form id="login-form">
+              <div class="mb-3">
+                <label for="email" class="form-label">Correo electrónico</label>
+                <input type="email" class="form-control" id="email" required autocomplete="email" />
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">Contraseña</label>
+                <input type="password" class="form-control" id="password" required autocomplete="current-password" />
+              </div>
+              <div id="login-error" class="alert alert-danger d-none" role="alert"></div>
+              <button type="submit" class="btn btn-success w-100" id="login-btn">
+                Ingresar
+              </button>
+            </form>
+          </div>
+        </div>
+        <p class="text-center text-muted small mt-3">
+          ¿Sin cuenta? Contacta a la junta directiva.
+        </p>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="assets/js/login.js"></script>
+</body>
+</html>

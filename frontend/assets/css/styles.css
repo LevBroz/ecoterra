@@ -1,0 +1,23 @@
+/* EcoTerra — estilos sobre Bootstrap 5 */
+
+:root {
+  --ecoterra-green: #198754;
+}
+
+.card-kpi {
+  border-left: 4px solid var(--ecoterra-green);
+}
+
+.card-kpi .kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.table > :not(caption) > * > * {
+  vertical-align: middle;
+}
+
+.chart-box {
+  position: relative;
+  min-height: 280px;
+}
