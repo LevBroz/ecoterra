@@ -96,6 +96,12 @@ Decisiones clave:
   `visit_archive` (registro mínimo, sin nombres); las funciones leen vivas+archivadas.
 - Transparencia tiene dos filtros: rango de meses (tendencias) y un selector
   `month` opcional que acota categorías + detalle a un mes puntual.
+- Casas: `houses.vehicles` (int, para stickers). El admin importa casas por CSV
+  (pestaña Casas → plantilla descargable + PapaParse vía CDN). Duplicados por
+  `code`: por defecto se omiten y se reportan; con "Actualizar existentes" se
+  sobrescriben (insert/update directo vía RLS admin, sin backend).
+- Cobro: en Morosidad el admin pulsa "Recordar" → abre WhatsApp (`wa.me`) con
+  mensaje prellenado. `bi_delinquency()` ahora es solo-admin y devuelve el teléfono.
 - Cuotas mensuales se generan con `generate_monthly_fees()` vía **pg_cron**
   (gratis en Supabase; los cron jobs de Render cuestan dinero). El endpoint
   `POST /api/fees/generate` es respaldo manual.

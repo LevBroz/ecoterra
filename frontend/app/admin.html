@@ -50,6 +50,7 @@
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-anuncios">Anuncios</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gastos">Gastos / Inversiones</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-formularios">Formularios</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-casas">Casas</button></li>
     </ul>
 
     <div class="tab-content bg-white border border-top-0 rounded-bottom p-3 shadow-sm">
@@ -58,7 +59,7 @@
       <div class="tab-pane fade show active" id="tab-morosidad">
         <div class="table-responsive">
           <table class="table table-hover cards">
-            <thead><tr><th>Casa</th><th>Propietario</th><th>Cuotas vencidas</th><th>Monto</th></tr></thead>
+            <thead><tr><th>Casa</th><th>Propietario</th><th>Cuotas vencidas</th><th>Monto</th><th>Acción</th></tr></thead>
             <tbody id="delinquency-body"></tbody>
           </table>
         </div>
@@ -245,6 +246,35 @@
           <table class="table table-hover cards">
             <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th>Factura</th></tr></thead>
             <tbody id="tx-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Casas (importar / plantilla) -->
+      <div class="tab-pane fade" id="tab-casas">
+        <div class="d-flex gap-2 flex-wrap align-items-center mb-3">
+          <button class="btn btn-outline-success" id="btn-template">
+            <i class="bi bi-download"></i> Descargar plantilla
+          </button>
+          <label class="btn btn-success mb-0">
+            <i class="bi bi-upload"></i> Importar CSV
+            <input type="file" id="import-file" accept=".csv,text/csv" hidden />
+          </label>
+          <div class="form-check ms-2">
+            <input class="form-check-input" type="checkbox" id="import-update" />
+            <label class="form-check-label" for="import-update">Actualizar casas existentes</label>
+          </div>
+        </div>
+        <p class="text-muted small">
+          Columnas: <code>code, owner_name, email, phone, vehicles</code>.
+          Por defecto, las casas ya registradas se <strong>omiten</strong> y se avisan;
+          marca "Actualizar casas existentes" para sobrescribir sus datos.
+        </p>
+        <div id="import-report"></div>
+        <div class="table-responsive">
+          <table class="table table-hover cards">
+            <thead><tr><th>Casa</th><th>Propietario</th><th>Correo</th><th>Teléfono</th><th>Vehículos</th></tr></thead>
+            <tbody id="houses-body"></tbody>
           </table>
         </div>
       </div>

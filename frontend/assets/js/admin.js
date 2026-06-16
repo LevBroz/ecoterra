@@ -43,8 +43,34 @@ async function loadDelinquency() {
     <tr>
       <td><strong>${r.house_code}</strong></td><td>${r.owner_name}</td>
       <td>${r.overdue_count}</td><td class="text-danger">${fmtMoney(r.overdue_amount)}</td>
-    </tr>`).join('') || '<tr><td colspan="4" class="text-success p-3">Todas las casas están al día 🎉</td></tr>';
+      <td>
+        <button class="btn btn-outline-success btn-sm" data-remind
+          data-phone="${r.phone || ''}" data-code="${r.house_code}" data-owner="${r.owner_name}"
+          data-count="${r.overdue_count}" data-amount="${r.overdue_amount}">
+          <i class="bi bi-whatsapp"></i> Recordar
+        </button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="5" class="text-success p-3">Todas las casas están al día.</td></tr>';
 }
+
+// Recordatorio de cobro por WhatsApp (mensaje prellenado)
+document.getElementById('delinquency-body').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-remind]');
+  if (!btn) return;
+  const { phone, code, owner, count, amount } = btn.dataset;
+  const msg = `Estimada ${owner}, le recordamos que su casa ${code} tiene ${count} cuota(s) `
+    + `de mantenimiento pendiente(s) por un total de ${fmtMoney(Number(amount))}. `
+    + `Puede ponerse al día por transferencia o en administración. `
+    + `¡Gracias! — Junta Directiva EcoTerra`;
+  // wa.me requiere dígitos en formato internacional. SV = 503; si vienen 8
+  // dígitos locales se antepone 503. Si no hay teléfono, WhatsApp pide el contacto.
+  const digits = (phone || '').replace(/\D/g, '');
+  const intl = digits ? (digits.length <= 8 ? '503' + digits : digits) : '';
+  const url = intl
+    ? `https://wa.me/${intl}?text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+});
 
 async function loadKpis() {
   const today = new Date().toISOString().slice(0, 10);
@@ -405,13 +431,103 @@ document.getElementById('tx-body').addEventListener('click', async (e) => {
   window.open(data.signedUrl, '_blank');
 });
 
+// ----- Casas: listado, plantilla e importación CSV -----
+async function loadHousesList() {
+  const { data } = await supabase.from('houses').select('*').order('code');
+  document.getElementById('houses-body').innerHTML = (data || []).map((h) => `
+    <tr>
+      <td><strong>${h.code}</strong></td><td>${h.owner_name}</td>
+      <td>${h.email || '—'}</td><td>${h.phone || '—'}</td>
+      <td>${h.vehicles ?? 0}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="text-muted">Sin casas registradas.</td></tr>';
+}
+
+document.getElementById('btn-template').addEventListener('click', () => {
+  const csv = 'code,owner_name,email,phone,vehicles\n'
+    + 'A-01,Familia Ejemplo,correo@ejemplo.com,7000-0000,2\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'plantilla_casas_ecoterra.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+function showImportReport(html) {
+  document.getElementById('import-report').innerHTML = html;
+}
+
+document.getElementById('import-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const Papa = (await import('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm')).default;
+    Papa.parse(file, {
+      header: true, skipEmptyLines: true,
+      complete: (res) => importHouses(res.data),
+      error: () => showImportReport('<div class="alert alert-danger">No se pudo leer el archivo.</div>'),
+    });
+  } catch {
+    showImportReport('<div class="alert alert-danger">No se pudo cargar el lector de CSV.</div>');
+  }
+  e.target.value = '';
+});
+
+async function importHouses(rows) {
+  const clean = rows.map((r) => ({
+    code: (r.code || '').trim(),
+    owner_name: (r.owner_name || '').trim(),
+    email: (r.email || '').trim() || null,
+    phone: (r.phone || '').trim() || null,
+    vehicles: Number.parseInt(r.vehicles, 10) || 0,
+  })).filter((r) => r.code && r.owner_name);
+
+  if (!clean.length) {
+    return showImportReport('<div class="alert alert-danger">No hay filas válidas. '
+      + 'Revisa los encabezados: <code>code, owner_name, email, phone, vehicles</code>.</div>');
+  }
+
+  const { data: existing } = await supabase.from('houses').select('code');
+  const existingCodes = new Set((existing || []).map((h) => h.code));
+  const update = document.getElementById('import-update').checked;
+  const news = clean.filter((r) => !existingCodes.has(r.code));
+  const dupes = clean.filter((r) => existingCodes.has(r.code));
+
+  let created = 0, updated = 0;
+  if (news.length) {
+    const { error } = await supabase.from('houses').insert(news);
+    if (error) return showImportReport(`<div class="alert alert-danger">Error al crear casas: ${error.message}</div>`);
+    created = news.length;
+  }
+  if (dupes.length && update) {
+    for (const r of dupes) {
+      const { error } = await supabase.from('houses')
+        .update({ owner_name: r.owner_name, email: r.email, phone: r.phone, vehicles: r.vehicles })
+        .eq('code', r.code);
+      if (!error) updated += 1;
+    }
+  }
+
+  const parts = [`<strong>${created}</strong> creada(s)`];
+  if (update) parts.push(`<strong>${updated}</strong> actualizada(s)`);
+  let html = `<div class="alert alert-success">Importación lista: ${parts.join(', ')}.</div>`;
+  if (!update && dupes.length) {
+    html += `<div class="alert alert-warning">
+      <strong>${dupes.length} casa(s) ya registrada(s)</strong> (no modificadas):
+      ${dupes.map((d) => d.code).join(', ')}.<br>
+      Marca <em>"Actualizar casas existentes"</em> y vuelve a importar si deseas sobrescribir sus datos.
+    </div>`;
+  }
+  showImportReport(html);
+  await Promise.all([loadHousesList(), loadHouses()]); // refresca tabla y selects de pago
+}
+
 document.getElementById('pay-date').valueAsDate = new Date();
 document.getElementById('tx-date').valueAsDate = new Date();
 document.getElementById('ann-start').valueAsDate = new Date();
 
 await Promise.all([
   loadDelinquency(), loadKpis(), loadHouses(),
-  loadReservations(), loadAnnouncements(), loadTransactions(), loadFormTemplates(),
+  loadReservations(), loadAnnouncements(), loadTransactions(), loadFormTemplates(), loadHousesList(),
 ]);
 
 // Refrescar badge de reservas pendientes cada 60s
