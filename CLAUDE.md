@@ -111,6 +111,14 @@ Decisiones clave:
   `arrived` de forma ATÓMICA (`update ... where pass_used_at is null`). Resultados:
   granted/already_used/house_overdue/wrong_day/invalid_status/not_found/forbidden.
   La regla "un solo uso" y "al día" viven en esa función, no en el cliente.
+  - **Escaneo del vigilante**: en web usa `BarcodeDetector`/ZXing (`getUserMedia`);
+    en la app nativa usa el plugin MLKit (`Capacitor.Plugins.BarcodeScanner.scan()`),
+    porque el WebView de Capacitor bloquea `getUserMedia`. `guard.js` ramifica con
+    `Capacitor.isNativePlatform()`.
+  - **Compartir pase**: el residente comparte `pase.html?t=<token>&n=&d=` (página
+    pública sin login que solo dibuja el QR del token) por WhatsApp — `@capacitor/share`
+    en nativo, Web Share API en web, `wa.me` de respaldo. El enlace usa
+    `PUBLIC_WEB_URL` (config.js), no `location.origin` (en la APK sería el WebView).
 
 ## App móvil (Android)
 

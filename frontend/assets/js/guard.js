@@ -169,13 +169,45 @@ const scanModalEl = document.getElementById('scan-modal');
 const scanResult = document.getElementById('scan-result');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-scanModalEl.addEventListener('shown.bs.modal', startScan);
+const isNative = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
+// Botón "Escanear QR": en la app nativa abre el escáner MLKit (cámara nativa,
+// sin teclear nada); en web abre el modal con la cámara del navegador.
+document.getElementById('btn-scan').addEventListener('click', () => {
+  if (isNative()) nativeScan();
+  else bootstrap.Modal.getOrCreateInstance(scanModalEl).show();
+});
+scanModalEl.addEventListener('shown.bs.modal', () => { if (!isNative()) startScan(); });
 scanModalEl.addEventListener('hidden.bs.modal', stopScan);
+
+// ----- Escáner nativo (Capacitor + MLKit barcode-scanning) -----
+async function nativeScan() {
+  const sc = window.Capacitor?.Plugins?.BarcodeScanner;
+  if (!sc) return toast('Escáner nativo no disponible', 'danger');
+  try {
+    const { barcodes } = await sc.scan({ formats: ['QR_CODE'] });
+    bootstrap.Modal.getOrCreateInstance(scanModalEl).show();
+    document.getElementById('scan-video').classList.add('d-none');
+    const raw = barcodes?.[0]?.rawValue || barcodes?.[0]?.displayValue;
+    if (raw) await handleToken(raw);
+    else { scanResult.innerHTML = withRetry(banner('secondary', 'Sin lectura', 'No se detectó ningún código.')); wireRetry(); }
+  } catch (e) {
+    const msg = String(e?.message || e);
+    // En el primer uso puede faltar el módulo de escáner de Google: lo instala
+    if (/module/i.test(msg) && sc.installGoogleBarcodeScannerModule) {
+      try { await sc.installGoogleBarcodeScannerModule(); toast('Preparando escáner, intenta de nuevo'); }
+      catch { toast('No se pudo iniciar el escáner', 'danger'); }
+    } else {
+      toast('Escaneo cancelado', 'warning');
+    }
+  }
+}
 
 async function startScan() {
   scanResult.innerHTML = '';
   scanBusy = false;
   const video = document.getElementById('scan-video');
+  video.classList.remove('d-none');
   try {
     scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
     video.srcObject = scanStream;
@@ -215,7 +247,13 @@ async function onScan(text) {
   if (scanBusy) return;
   scanBusy = true;
   stopScan();
-  const token = (text || '').trim();
+  await handleToken(text);
+  scanBusy = false;
+}
+
+// Valida el token, canjea el pase y muestra el resultado. Lo usan web y nativo.
+async function handleToken(raw) {
+  const token = (raw || '').trim();
   if (!UUID_RE.test(token)) {
     scanResult.innerHTML = withRetry(banner('danger', 'QR no válido',
       'No corresponde a un pase de EcoTerra.'));
@@ -274,7 +312,10 @@ const banner = (type, title, msg) =>
 const withRetry = (html) =>
   html + '<button class="btn btn-success w-100 mt-3" id="scan-again"><i class="bi bi-qr-code-scan"></i> Escanear otro</button>';
 function wireRetry() {
-  document.getElementById('scan-again')?.addEventListener('click', () => { scanResult.innerHTML = ''; startScan(); });
+  document.getElementById('scan-again')?.addEventListener('click', () => {
+    scanResult.innerHTML = '';
+    if (isNative()) nativeScan(); else startScan();
+  });
 }
 
 await Promise.all([loadVisits(), loadHouses()]);

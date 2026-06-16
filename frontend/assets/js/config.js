@@ -5,3 +5,9 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 // URL del backend en Render (en local: http://localhost:3001)
 export const API_URL = 'https://ecoterra-bung.onrender.com';
+
+// URL pública del sitio web (Netlify). Se usa para armar el enlace del pase
+// que el residente comparte por WhatsApp: el visitante lo abre en su navegador.
+// OJO: en la APK no se puede usar location.origin (sería el WebView local),
+// por eso se fija aquí la URL real y accesible.
+export const PUBLIC_WEB_URL = 'https://ecoterra1.netlify.app';

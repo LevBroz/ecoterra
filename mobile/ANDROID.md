@@ -23,15 +23,32 @@ npm run add:android      # crea mobile/android (proyecto nativo)
 npm run sync             # copia frontend/ al proyecto + instala plugins
 ```
 
-### Permiso de cámara (obligatorio para escanear)
+### Plugins nativos
 
-Editar `mobile/android/app/src/main/AndroidManifest.xml` y agregar dentro de
-`<manifest>` (antes de `<application>`):
+Están en `package.json` y `cap sync` los cablea solo:
+- `@capacitor-mlkit/barcode-scanning` → escáner QR nativo del vigilante.
+- `@capacitor/share` → compartir el pase por WhatsApp (hoja del sistema).
 
+### Permisos del manifest (tras regenerar `android/`)
+
+`android/` está en `.gitignore`, así que si lo borras y vuelves a correr
+`cap add android` debes re-aplicar estos cambios en
+`mobile/android/app/src/main/AndroidManifest.xml`:
+
+Dentro de `<manifest>` (antes de `</manifest>`):
 ```xml
 <uses-permission android:name="android.permission.CAMERA" />
 <uses-feature android:name="android.hardware.camera" android:required="false" />
 ```
+
+Dentro de `<application>` (para que el módulo MLKit se baje al instalar):
+```xml
+<meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui" />
+```
+
+> El escáner usa el **escáner de código de Google (MLKit)**, que gestiona la
+> cámara por su cuenta (no depende de `getUserMedia`, que el WebView bloquea).
+> Requiere Google Play Services — usa un teléfono real o un emulador con Play Store.
 
 ## Probar / compilar
 

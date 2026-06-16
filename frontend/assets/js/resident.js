@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { guardPage, logout } from './auth.js';
+import { PUBLIC_WEB_URL } from './config.js';
 import { fmtMoney, fmtDate, badge, toast, renderNavbar } from './ui.js';
 
 const ctx = await guardPage('resident');
@@ -96,11 +97,13 @@ async function loadVisits() {
 
 // ----- Pase QR de un solo uso -----
 let qrLib = null;
+let currentPass = null;
 async function showQrPass(token, name, date) {
   qrLib = qrLib || (await import('https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm')).default;
   const canvas = document.getElementById('qr-canvas');
   await qrLib.toCanvas(canvas, token, { width: 240, margin: 1, color: { dark: '#4a1f2b', light: '#ffffff' } });
   document.getElementById('qr-caption').textContent = `${name} · ${fmtDate(date)}`;
+  currentPass = { token, name, date };
   bootstrap.Modal.getOrCreateInstance(document.getElementById('qr-modal')).show();
 }
 
@@ -108,6 +111,31 @@ document.getElementById('visits-body').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-qr]');
   if (!btn) return;
   showQrPass(btn.dataset.qr, btn.dataset.name, btn.dataset.date);
+});
+
+// Compartir el pase con la visita (enlace público a pase.html)
+async function sharePass({ token, name, date }) {
+  const url = `${PUBLIC_WEB_URL}/pase.html?t=${token}&n=${encodeURIComponent(name)}${date ? `&d=${date}` : ''}`;
+  const text = `Hola ${name}, este es tu pase de entrada a EcoTerra`
+    + `${date ? ` (válido ${fmtDate(date)})` : ''}. Es de un solo uso; ábrelo y muéstralo en portería:`;
+  const Plugins = window.Capacitor?.Plugins;
+
+  // App nativa: hoja de compartir del sistema (incluye WhatsApp)
+  if (window.Capacitor?.isNativePlatform?.() && Plugins?.Share) {
+    try { await Plugins.Share.share({ title: 'Pase EcoTerra', text, url, dialogTitle: 'Compartir pase' }); } catch { /* cancelado */ }
+    return;
+  }
+  // Web con Web Share API (Android Chrome muestra la hoja con WhatsApp)
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Pase EcoTerra', text, url }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  // Respaldo: abrir WhatsApp directamente con el enlace
+  window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+}
+
+document.getElementById('qr-share').addEventListener('click', () => {
+  if (currentPass) sharePass(currentPass);
 });
 
 async function loadReservations() {
