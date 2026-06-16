@@ -102,6 +102,12 @@ Decisiones clave:
   sobrescriben (insert/update directo vía RLS admin, sin backend).
 - Cobro: en Morosidad el admin pulsa "Recordar" → abre WhatsApp (`wa.me`) con
   mensaje prellenado. `bi_delinquency()` ahora es solo-admin y devuelve el teléfono.
+- Recibo de pago (NO fiscal): `emitReceipt()` en `ui.js` genera un PDF con jsPDF
+  (CDN) y lo comparte (Web Share API) o descarga. Residente: botón por pago en su
+  historial; admin: tras registrar un pago. Es el paso previo a la **DTE** de
+  Hacienda El Salvador (factura electrónica real), que NO está implementada: requiere
+  certificado + credenciales + firmador + hosting confiable (deja de ser $0). El
+  PDF lleva la leyenda "Documento no fiscal".
 - Cuotas mensuales se generan con `generate_monthly_fees()` vía **pg_cron**
   (gratis en Supabase; los cron jobs de Render cuestan dinero). El endpoint
   `POST /api/fees/generate` es respaldo manual.

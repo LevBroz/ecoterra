@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { guardPage, logout } from './auth.js';
 import { PUBLIC_WEB_URL } from './config.js';
-import { fmtMoney, fmtDate, badge, toast, renderNavbar, enableCardTables } from './ui.js';
+import { fmtMoney, fmtDate, badge, toast, renderNavbar, enableCardTables, emitReceipt } from './ui.js';
 
 const ctx = await guardPage('resident');
 if (!ctx) throw new Error('redirect');
@@ -57,6 +57,7 @@ async function loadFees() {
     </tr>`).join('') || '<tr><td colspan="5" class="text-muted">Sin cuotas registradas.</td></tr>';
 }
 
+let myPayments = [];
 async function loadPayments() {
   const { data, error } = await supabase
     .from('payments')
@@ -64,13 +65,34 @@ async function loadPayments() {
     .eq('house_id', profile.house_id)
     .order('paid_at', { ascending: false });
   if (error) return;
-  document.getElementById('payments-body').innerHTML = data.map((p) => `
+  myPayments = data || [];
+  document.getElementById('payments-body').innerHTML = myPayments.map((p) => `
     <tr>
       <td>${fmtDate(p.paid_at)}</td>
       <td>${p.fees ? `${p.fees.concept} ${p.fees.period}` : (p.notes || '—')}</td>
       <td>${fmtMoney(p.amount)}</td><td>${p.method}</td><td>${p.reference || '—'}</td>
-    </tr>`).join('') || '<tr><td colspan="5" class="text-muted">Sin pagos registrados.</td></tr>';
+      <td><button class="btn btn-outline-success btn-sm" data-receipt-id="${p.id}" title="Recibo PDF">
+        <i class="bi bi-filetype-pdf"></i> Recibo
+      </button></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="text-muted">Sin pagos registrados.</td></tr>';
 }
+
+document.getElementById('payments-body').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-receipt-id]');
+  if (!btn) return;
+  const p = myPayments.find((x) => x.id === btn.dataset.receiptId);
+  if (!p) return;
+  emitReceipt({
+    folio: 'REC-' + p.id.slice(0, 8).toUpperCase(),
+    houseCode: profile.houses?.code,
+    owner: profile.houses?.owner_name || profile.full_name,
+    concept: p.fees ? `${p.fees.concept} ${p.fees.period}` : (p.notes || 'Pago'),
+    amount: Number(p.amount),
+    method: p.method,
+    reference: p.reference,
+    paidAt: fmtDate(p.paid_at),
+  });
+});
 
 async function loadVisits() {
   const { data, error } = await supabase

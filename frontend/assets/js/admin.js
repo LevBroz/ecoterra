@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { guardPage, logout, getAccessToken } from './auth.js';
 import { API_URL } from './config.js';
-import { fmtMoney, fmtDate, badge, toast, renderNavbar, enableCardTables } from './ui.js';
+import { fmtMoney, fmtDate, badge, toast, renderNavbar, enableCardTables, emitReceipt } from './ui.js';
 
 const ctx = await guardPage('admin');
 if (!ctx) throw new Error('redirect');
@@ -116,10 +116,15 @@ document.getElementById('pay-fee').addEventListener('change', (e) => {
   if (amount) document.getElementById('pay-amount').value = amount;
 });
 
+let lastReceipt = null;
 document.getElementById('payment-form').addEventListener('submit', async (e) => {
   e.preventDefault();
+  // Capturar textos antes del reset (para el recibo)
+  const houseText = document.getElementById('pay-house').selectedOptions[0]?.textContent || '';
+  const feeSel = document.getElementById('pay-fee');
+  const feeText = feeSel.value ? (feeSel.selectedOptions[0]?.textContent || '') : '';
   try {
-    await api('/api/payments', {
+    const payment = await api('/api/payments', {
       method: 'POST',
       body: JSON.stringify({
         house_id: document.getElementById('pay-house').value,
@@ -132,12 +137,32 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
       }),
     });
     toast('Pago registrado');
+
+    // Preparar recibo descargable / enviable
+    const [houseCode, owner] = houseText.split(' — ');
+    lastReceipt = {
+      folio: 'REC-' + String(payment.id).slice(0, 8).toUpperCase(),
+      houseCode: (houseCode || '').trim(),
+      owner: (owner || '').trim(),
+      concept: feeText ? feeText.split(' — ')[0] : 'Abono / pago libre',
+      amount: Number(payment.amount),
+      method: payment.method,
+      reference: payment.reference,
+      paidAt: fmtDate(payment.paid_at),
+    };
+    document.getElementById('last-receipt').innerHTML =
+      '<button class="btn btn-outline-success" id="emit-receipt"><i class="bi bi-filetype-pdf"></i> Descargar / enviar recibo</button>';
+
     e.target.reset();
     document.getElementById('pay-date').valueAsDate = new Date();
     await Promise.all([loadDelinquency(), loadHouseFees()]);
   } catch (err) {
     toast(err.message, 'danger');
   }
+});
+
+document.getElementById('last-receipt').addEventListener('click', (e) => {
+  if (e.target.closest('#emit-receipt') && lastReceipt) emitReceipt(lastReceipt);
 });
 
 // ----- Reservas -----
