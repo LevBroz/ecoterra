@@ -17,7 +17,10 @@
       <h4 class="mb-0"><i class="bi bi-shield-check"></i> Portería — visitas de hoy</h4>
       <div class="d-flex gap-2">
         <input type="search" class="form-control" id="search" placeholder="Buscar nombre o casa…" style="max-width: 240px;" />
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#walkin-modal">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#scan-modal" id="btn-scan">
+          <i class="bi bi-qr-code-scan"></i> Escanear QR
+        </button>
+        <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#walkin-modal">
           <i class="bi bi-plus-lg"></i> Walk-in
         </button>
       </div>
@@ -83,6 +86,21 @@
           <button type="submit" class="btn btn-success">Registrar</button>
         </div>
       </form>
+    </div></div>
+  </div>
+
+  <!-- Modal: escanear pase QR -->
+  <div class="modal fade" id="scan-modal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-qr-code-scan"></i> Escanear pase QR</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <video id="scan-video" class="w-100 rounded bg-dark" playsinline muted
+               style="max-height: 60vh; object-fit: cover;"></video>
+        <div id="scan-result" class="mt-3"></div>
+      </div>
     </div></div>
   </div>
 

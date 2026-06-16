@@ -86,9 +86,29 @@ async function loadVisits() {
       <td>${v.company || v.plate || '—'}</td>
       <td>${badge(v.status)}</td>
       <td>${v.status === 'announced'
-        ? `<button class="btn btn-outline-danger btn-sm" data-cancel-visit="${v.id}">Cancelar</button>` : ''}</td>
+        ? `<button class="btn btn-success btn-sm" data-qr="${v.pass_token}"
+             data-name="${v.visitor_name}" data-date="${v.expected_date}">
+             <i class="bi bi-qr-code"></i> Pase QR
+           </button>
+           <button class="btn btn-outline-danger btn-sm" data-cancel-visit="${v.id}">Cancelar</button>` : ''}</td>
     </tr>`).join('') || '<tr><td colspan="6" class="text-muted">Sin visitas anunciadas.</td></tr>';
 }
+
+// ----- Pase QR de un solo uso -----
+let qrLib = null;
+async function showQrPass(token, name, date) {
+  qrLib = qrLib || (await import('https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm')).default;
+  const canvas = document.getElementById('qr-canvas');
+  await qrLib.toCanvas(canvas, token, { width: 240, margin: 1, color: { dark: '#4a1f2b', light: '#ffffff' } });
+  document.getElementById('qr-caption').textContent = `${name} · ${fmtDate(date)}`;
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('qr-modal')).show();
+}
+
+document.getElementById('visits-body').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-qr]');
+  if (!btn) return;
+  showQrPass(btn.dataset.qr, btn.dataset.name, btn.dataset.date);
+});
 
 async function loadReservations() {
   const { data, error } = await supabase

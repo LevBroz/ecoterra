@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { guardPage, logout } from './auth.js';
-import { badge, toast, renderNavbar } from './ui.js';
+import { badge, toast, renderNavbar, fmtDate } from './ui.js';
 
 const ctx = await guardPage('guard');
 if (!ctx) throw new Error('redirect');
@@ -15,24 +15,27 @@ let allVisits = [];
 const paymentStatusCache = new Map(); // house_id -> boolean
 let knownVisitIds = null; // null = primera carga (no notificar lo ya existente)
 
-// Sonido de notificación: dos tonos cortos con WebAudio (sin archivos)
-function playAlertSound() {
+// Sonidos con WebAudio (sin archivos). freqs = [[hz, delaySeg, durSeg], ...]
+function tone(freqs, type = 'sine') {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [[880, 0], [1175, 0.18]].forEach(([freq, delay]) => {
+    freqs.forEach(([freq, delay, dur]) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
+      osc.type = type;
       osc.frequency.value = freq;
-      osc.type = 'sine';
       gain.gain.setValueAtTime(0.25, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.25);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
       osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.3);
+      osc.stop(ctx.currentTime + delay + dur + 0.02);
     });
   } catch { /* sin audio si el navegador lo bloquea */ }
 }
+const playAlertSound = () => tone([[880, 0, 0.25], [1175, 0.18, 0.25]]);   // visita nueva
+const soundGranted  = () => tone([[660, 0, 0.15], [990, 0.15, 0.3]]);       // permitido
+const soundDenied   = () => tone([[180, 0, 0.45]], 'square');               // denegado
 
 function notifyNewVisits(visits) {
   if (knownVisitIds === null) {
@@ -159,6 +162,120 @@ document.getElementById('walkin-form').addEventListener('submit', async (e) => {
   toast('Registro guardado');
   loadVisits();
 });
+
+// ===== Escáner de pase QR =====
+let scanStream = null, scanLoop = null, zxingControls = null, scanBusy = false;
+const scanModalEl = document.getElementById('scan-modal');
+const scanResult = document.getElementById('scan-result');
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+scanModalEl.addEventListener('shown.bs.modal', startScan);
+scanModalEl.addEventListener('hidden.bs.modal', stopScan);
+
+async function startScan() {
+  scanResult.innerHTML = '';
+  scanBusy = false;
+  const video = document.getElementById('scan-video');
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = scanStream;
+    await video.play();
+  } catch {
+    scanResult.innerHTML = banner('danger', 'Sin acceso a la cámara',
+      'Permite el uso de la cámara para escanear pases.');
+    return;
+  }
+
+  if ('BarcodeDetector' in window) {
+    const detector = new BarcodeDetector({ formats: ['qr_code'] });
+    const tick = async () => {
+      if (!scanStream) return;
+      try {
+        const codes = await detector.detect(video);
+        if (codes.length) return onScan(codes[0].rawValue);
+      } catch { /* frame sin código */ }
+      scanLoop = requestAnimationFrame(tick);
+    };
+    scanLoop = requestAnimationFrame(tick);
+  } else {
+    // Fallback: ZXing desde CDN (navegadores sin BarcodeDetector)
+    const { BrowserQRCodeReader } = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm');
+    zxingControls = await new BrowserQRCodeReader()
+      .decodeFromStream(scanStream, video, (res) => { if (res) onScan(res.getText()); });
+  }
+}
+
+function stopScan() {
+  if (scanLoop) { cancelAnimationFrame(scanLoop); scanLoop = null; }
+  if (zxingControls) { zxingControls.stop(); zxingControls = null; }
+  if (scanStream) { scanStream.getTracks().forEach((t) => t.stop()); scanStream = null; }
+}
+
+async function onScan(text) {
+  if (scanBusy) return;
+  scanBusy = true;
+  stopScan();
+  const token = (text || '').trim();
+  if (!UUID_RE.test(token)) {
+    scanResult.innerHTML = withRetry(banner('danger', 'QR no válido',
+      'No corresponde a un pase de EcoTerra.'));
+    soundDenied();
+    return wireRetry();
+  }
+  const { data, error } = await supabase.rpc('redeem_visit_pass', { p_token: token });
+  if (error) {
+    scanResult.innerHTML = withRetry(banner('danger', 'Error', error.message));
+    soundDenied();
+    return wireRetry();
+  }
+  renderScanResult(data);
+  paymentStatusCache.clear();
+  loadVisits();
+}
+
+function renderScanResult(d) {
+  const who = `${d.house_code ? d.house_code + ' · ' : ''}${d.visitor_name || ''}`.trim();
+  let html;
+  switch (d.result) {
+    case 'granted':
+      html = banner('success', '✓ ENTRADA PERMITIDA',
+        `${d.type === 'delivery' ? 'Delivery' : 'Visita'} — ${who}`);
+      soundGranted(); break;
+    case 'already_used':
+      html = banner('danger', '✗ PASE YA UTILIZADO',
+        `${who}. Validar con el residente antes de permitir el paso.`);
+      soundDenied(); break;
+    case 'house_overdue':
+      html = banner('danger', '✗ CASA EN MORA', `${who}. Entrada no permitida.`);
+      soundDenied(); break;
+    case 'wrong_day':
+      html = banner('warning', 'Pase para otra fecha',
+        `${who}. Válido el ${fmtDate(d.expected_date)}.`);
+      soundDenied(); break;
+    case 'invalid_status':
+      html = banner('danger', 'Pase no válido',
+        `${who}. Estado: ${badge(d.status)}.`);
+      soundDenied(); break;
+    case 'not_found':
+      html = banner('danger', 'QR no reconocido', 'El pase no existe en el sistema.');
+      soundDenied(); break;
+    case 'forbidden':
+      html = banner('danger', 'No autorizado', 'Solo el vigilante puede validar pases.');
+      soundDenied(); break;
+    default:
+      html = banner('secondary', 'Resultado', JSON.stringify(d));
+  }
+  scanResult.innerHTML = withRetry(html);
+  wireRetry();
+}
+
+const banner = (type, title, msg) =>
+  `<div class="alert alert-${type} mb-0"><h5 class="alert-heading mb-1">${title}</h5><p class="mb-0">${msg}</p></div>`;
+const withRetry = (html) =>
+  html + '<button class="btn btn-success w-100 mt-3" id="scan-again"><i class="bi bi-qr-code-scan"></i> Escanear otro</button>';
+function wireRetry() {
+  document.getElementById('scan-again')?.addEventListener('click', () => { scanResult.innerHTML = ''; startScan(); });
+}
 
 await Promise.all([loadVisits(), loadHouses()]);
 // Polling cada 20s: detecta visitas nuevas → globo + sonido.

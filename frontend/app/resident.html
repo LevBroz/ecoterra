@@ -201,6 +201,23 @@
     </div></div>
   </div>
 
+  <!-- Modal: pase QR de un solo uso -->
+  <div class="modal fade" id="qr-modal" tabindex="-1">
+    <div class="modal-dialog modal-sm"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-qr-code"></i> Pase de entrada</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <canvas id="qr-canvas" class="mb-2"></canvas>
+        <p class="mb-1 fw-semibold" id="qr-caption"></p>
+        <p class="text-muted small mb-0">
+          Muestra este código en portería. Es de <strong>un solo uso</strong> y válido el día indicado.
+        </p>
+      </div>
+    </div></div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="../assets/js/resident.js"></script>
 </body>

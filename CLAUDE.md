@@ -104,6 +104,22 @@ Decisiones clave:
 - "Notificaciones" son in-app (badges + polling), no Web Push: residente ve
   badge de anuncios no leídos; admin ve badge de reservas pendientes (60s);
   vigilante recibe globo + sonido WebAudio al caer visita nueva (20s).
+- Pase QR de un solo uso (`09_qr_pass.sql`): cada `visits` tiene `pass_token`
+  (uuid) y `pass_used_at`. Residente muestra el QR (lib `qrcode` por CDN);
+  vigilante escanea (`BarcodeDetector`, fallback ZXing por CDN) y llama
+  `redeem_visit_pass(token)` — función `security definer` que valida y marca
+  `arrived` de forma ATÓMICA (`update ... where pass_used_at is null`). Resultados:
+  granted/already_used/house_overdue/wrong_day/invalid_status/not_found/forbidden.
+  La regla "un solo uso" y "al día" viven en esa función, no en el cliente.
+
+## App móvil (Android)
+
+`mobile/` envuelve el frontend estático con **Capacitor** (ver `mobile/ANDROID.md`).
+No reescribe nada: el WebView carga los mismos HTML/JS y consume Supabase/Render
+por internet. `webDir = ../frontend`. El escáner QR reutiliza `getUserMedia` +
+`BarcodeDetector` del WebView. `mobile/android/` y `mobile/node_modules/` no se
+versionan (se regeneran con `npm install` + `npm run add:android`). No afecta a
+Netlify ni Render. Publicar en Play Store cuesta $25 (único) — fuera del $0 web.
 
 ## Diseño visual
 

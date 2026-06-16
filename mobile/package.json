@@ -1,0 +1,19 @@
+{
+  "name": "ecoterra-mobile",
+  "version": "0.1.0",
+  "description": "Envoltorio Capacitor (Android) de la web app EcoTerra. No afecta a Netlify/Render.",
+  "private": true,
+  "scripts": {
+    "add:android": "cap add android",
+    "sync": "cap sync",
+    "copy": "cap copy",
+    "open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}

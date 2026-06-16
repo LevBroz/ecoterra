@@ -1,0 +1,11 @@
+{
+  "appId": "com.ecoterra.app",
+  "appName": "EcoTerra",
+  "webDir": "../frontend",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
