@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { guardPage, logout, getAccessToken } from './auth.js';
 import { API_URL } from './config.js';
-import { fmtMoney, fmtDate, badge, toast, renderNavbar } from './ui.js';
+import { fmtMoney, fmtDate, badge, toast, renderNavbar, enableCardTables } from './ui.js';
 
 const ctx = await guardPage('admin');
 if (!ctx) throw new Error('redirect');
@@ -12,6 +12,7 @@ document.getElementById('navbar').innerHTML = renderNavbar(profile, [
   ['transparencia', './transparencia.html', 'Transparencia / BI'],
 ], 'home');
 document.getElementById('logout-btn').addEventListener('click', logout);
+enableCardTables();
 
 // Llamada al backend de Render (operaciones con service role)
 async function api(path, options = {}) {

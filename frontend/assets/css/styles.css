@@ -316,6 +316,66 @@ button, a, select, [data-bs-toggle], .nav-link {
   box-shadow: var(--et-shadow-md);
 }
 
+/* ---------- Tablas como tarjetas en móvil (sin scroll horizontal) ---------- */
+/* En ≤768px cada fila de una `table.cards` se apila como tarjeta vertical.
+   El label de cada celda lo pone JS con data-label (makeCardTable en ui.js). */
+@media (max-width: 768px) {
+  .table-responsive { overflow-x: visible; }
+
+  table.cards thead { display: none; }
+
+  table.cards, table.cards tbody { display: block; width: 100%; }
+
+  table.cards tr {
+    display: block;
+    border: 1px solid var(--et-border);
+    border-radius: var(--et-radius);
+    background: var(--et-surface);
+    box-shadow: var(--et-shadow-sm);
+    margin-bottom: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  table.cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    text-align: right;
+    border: none;
+    border-bottom: 1px solid var(--et-border);
+    padding: 0.6rem 0.4rem;
+  }
+  table.cards tr td:last-child { border-bottom: none; }
+
+  table.cards td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--et-muted);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    text-align: left;
+    flex: 0 0 auto;
+  }
+
+  /* Celdas vacías (p. ej. acciones de una visita ya resuelta): se ocultan */
+  table.cards td:empty,
+  table.cards td.cell-empty { display: none; }
+
+  /* Fila de "sin datos" (un solo td con colspan): a lo ancho y centrada */
+  table.cards td.cell-full {
+    justify-content: center;
+    text-align: center;
+    color: var(--et-muted);
+  }
+  table.cards td.cell-full::before { content: none; }
+
+  /* Botones de acción cómodos a lo ancho de la tarjeta */
+  table.cards td:last-child .btn { flex: 1 1 auto; }
+  table.cards td:last-child { flex-wrap: wrap; justify-content: flex-end; gap: 0.4rem; }
+}
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

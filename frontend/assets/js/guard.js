@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { guardPage, logout } from './auth.js';
-import { badge, toast, renderNavbar, fmtDate } from './ui.js';
+import { badge, toast, renderNavbar, fmtDate, enableCardTables } from './ui.js';
 
 const ctx = await guardPage('guard');
 if (!ctx) throw new Error('redirect');
@@ -10,6 +10,7 @@ document.getElementById('navbar').innerHTML = renderNavbar(profile, [
   ['home', './guard.html', 'Portería'],
 ], 'home');
 document.getElementById('logout-btn').addEventListener('click', logout);
+enableCardTables();
 
 let allVisits = [];
 const paymentStatusCache = new Map(); // house_id -> boolean

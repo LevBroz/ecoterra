@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { guardPage, logout, homeForRole } from './auth.js';
-import { fmtMoney, fmtDate, renderNavbar } from './ui.js';
+import { fmtMoney, fmtDate, renderNavbar, enableCardTables } from './ui.js';
 
 // Transparencia: visible para residentes y admin
 const ctx = await guardPage('resident', 'admin');
@@ -12,6 +12,7 @@ document.getElementById('navbar').innerHTML = renderNavbar(profile, [
   ['transparencia', './transparencia.html', 'Transparencia'],
 ], 'transparencia');
 document.getElementById('logout-btn').addEventListener('click', logout);
+enableCardTables();
 
 const charts = {}; // id -> Chart, para destruir al refiltrar
 

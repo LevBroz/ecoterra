@@ -46,6 +46,39 @@ export function badge(status) {
   return `<span class="badge text-bg-${STATUS_BADGE[status] || 'secondary'}">${STATUS_LABEL[status] || status}</span>`;
 }
 
+// Convierte una <table class="cards"> en tarjetas verticales en móvil:
+// copia el texto del thead a cada celda como data-label (lo usa el CSS).
+// Observa el tbody para re-etiquetar en cada re-render.
+export function makeCardTable(table) {
+  if (!table) return;
+  const headers = [...table.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+  const tbody = table.querySelector('tbody');
+  if (!tbody) return;
+  const apply = () => {
+    for (const tr of tbody.rows) {
+      [...tr.cells].forEach((td, i) => {
+        if (td.colSpan && td.colSpan > 1) {
+          td.classList.add('cell-full');
+          td.removeAttribute('data-label');
+          return;
+        }
+        // Celda sin contenido real (p. ej. acciones de una visita resuelta)
+        const empty = !td.children.length && !td.textContent.trim();
+        td.classList.toggle('cell-empty', empty);
+        if (empty) td.removeAttribute('data-label');
+        else td.setAttribute('data-label', headers[i] || '');
+      });
+    }
+  };
+  apply();
+  new MutationObserver(apply).observe(tbody, { childList: true });
+}
+
+// Activa el modo tarjeta en todas las tablas .cards de la página
+export function enableCardTables(root = document) {
+  root.querySelectorAll('table.cards').forEach(makeCardTable);
+}
+
 // Navbar compartida; `active` = id de página activa
 export function renderNavbar(profile, links, active) {
   const items = links
