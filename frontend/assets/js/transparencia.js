@@ -14,6 +14,10 @@ document.getElementById('navbar').innerHTML = renderNavbar(profile, [
 document.getElementById('logout-btn').addEventListener('click', logout);
 enableCardTables();
 
+// El panel de accesos es exclusivo de la junta directiva
+const isAdmin = profile.role === 'admin';
+if (isAdmin) document.getElementById('accesos-panel').classList.remove('d-none');
+
 const charts = {}; // id -> Chart, para destruir al refiltrar
 
 function renderChart(id, config) {
@@ -35,13 +39,30 @@ async function loadAll() {
   const fromStr = from.toISOString().slice(0, 10);
   const toStr = new Date().toISOString().slice(0, 10);
 
+  // Filtro opcional de un mes específico (afecta categorías + detalle, no las tendencias)
+  const selMonth = document.getElementById('month-filter').value; // '' o 'YYYY-MM'
+  let detFrom = fromStr, detTo = toStr;
+  if (selMonth) {
+    const [y, m] = selMonth.split('-').map(Number);
+    detFrom = `${selMonth}-01`;
+    detTo = new Date(y, m, 0).toISOString().slice(0, 10); // último día del mes
+  }
+  document.getElementById('detail-period').textContent = selMonth
+    ? `· ${new Date(detFrom + 'T00:00:00').toLocaleDateString('es', { month: 'long', year: 'numeric' })}`
+    : `· últimos ${months} meses`;
+
+  let txQuery = supabase.from('transactions').select('*')
+    .order('tx_date', { ascending: false }).limit(200);
+  txQuery = selMonth ? txQuery.gte('tx_date', detFrom).lte('tx_date', detTo) : txQuery.gte('tx_date', fromStr);
+
   const [cashflow, collection, byCategory, txs] = await Promise.all([
     supabase.rpc('bi_monthly_cashflow', { p_months: months }),
     supabase.rpc('bi_collection_rate', { p_months: months }),
-    supabase.rpc('bi_expenses_by_category', { p_from: fromStr, p_to: toStr }),
-    supabase.from('transactions').select('*').gte('tx_date', fromStr)
-      .order('tx_date', { ascending: false }).limit(100),
+    supabase.rpc('bi_expenses_by_category', { p_from: detFrom, p_to: detTo }),
+    txQuery,
   ]);
+
+  if (isAdmin) loadAccesos(months);
 
   const cf = cashflow.data || [];
   const labels = cf.map((r) => r.month);
@@ -151,5 +172,51 @@ document.getElementById('tx-body').addEventListener('click', async (e) => {
   window.open(data.signedUrl, '_blank');
 });
 
+// ----- Accesos y seguridad (solo junta) -----
+async function loadAccesos(months) {
+  const [summary, monthly, byHouse] = await Promise.all([
+    supabase.rpc('bi_visits_summary', { p_months: months }),
+    supabase.rpc('bi_visits_monthly', { p_months: months }),
+    supabase.rpc('bi_visits_by_house', { p_months: months }),
+  ]);
+
+  const s = (summary.data && summary.data[0]) || {};
+  const total = Number(s.total || 0);
+  document.getElementById('kpi-acc-total').textContent = total;
+  document.getElementById('kpi-acc-deliveries').textContent = Number(s.deliveries || 0);
+  document.getElementById('kpi-acc-denied').textContent = Number(s.denied || 0);
+  document.getElementById('kpi-acc-app').textContent =
+    total ? `${Math.round(Number(s.announced_app || 0) / total * 100)}%` : '—';
+
+  const m = monthly.data || [];
+  renderChart('chart-visits-monthly', {
+    type: 'bar',
+    data: {
+      labels: m.map((r) => r.month),
+      datasets: [
+        { label: 'Visitas', data: m.map((r) => Number(r.visits)), backgroundColor: '#7c2d43cc', borderRadius: 4 },
+        { label: 'Deliveries', data: m.map((r) => Number(r.deliveries)), backgroundColor: '#586ba4cc', borderRadius: 4 },
+        { label: 'Denegadas', data: m.map((r) => Number(r.denied)), backgroundColor: '#d97706cc', borderRadius: 4 },
+      ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+  });
+
+  const h = byHouse.data || [];
+  renderChart('chart-visits-houses', {
+    type: 'bar',
+    data: {
+      labels: h.map((r) => r.house_code),
+      datasets: [{ label: 'Accesos', data: h.map((r) => Number(r.total)), backgroundColor: '#7c2d43cc', borderRadius: 4 }],
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+  });
+}
+
 document.getElementById('months-filter').addEventListener('change', loadAll);
+document.getElementById('month-filter').addEventListener('change', loadAll);
+document.getElementById('month-clear').addEventListener('click', () => {
+  document.getElementById('month-filter').value = '';
+  loadAll();
+});
 await loadAll();

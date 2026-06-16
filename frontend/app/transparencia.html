@@ -15,11 +15,20 @@
   <main class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <h4 class="mb-0"><i class="bi bi-bar-chart-line"></i> Transparencia — Junta Directiva</h4>
-      <select class="form-select" id="months-filter" style="max-width: 200px;">
-        <option value="6">Últimos 6 meses</option>
-        <option value="12" selected>Últimos 12 meses</option>
-        <option value="24">Últimos 24 meses</option>
-      </select>
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <select class="form-select" id="months-filter" style="max-width: 190px;" title="Rango de las gráficas de tendencia">
+          <option value="6">Últimos 6 meses</option>
+          <option value="12" selected>Últimos 12 meses</option>
+          <option value="24">Últimos 24 meses</option>
+        </select>
+        <div class="input-group" style="max-width: 220px;" title="Ver un mes específico (detalle y categorías)">
+          <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+          <input type="month" class="form-control" id="month-filter" />
+          <button class="btn btn-outline-secondary" type="button" id="month-clear" title="Quitar filtro de mes">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- KPIs -->
@@ -83,12 +92,65 @@
     <!-- Detalle de movimientos -->
     <div class="card shadow-sm">
       <div class="card-body">
-        <h6 class="card-title">Detalle de gastos e inversiones</h6>
+        <h6 class="card-title">
+          Detalle de gastos e inversiones
+          <span id="detail-period" class="text-muted small fw-normal"></span>
+        </h6>
         <div class="table-responsive">
           <table class="table table-hover table-sm cards">
             <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th class="text-end">Monto</th><th>Factura</th></tr></thead>
             <tbody id="tx-body"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accesos y seguridad — SOLO junta directiva (oculto para residentes) -->
+    <div id="accesos-panel" class="d-none">
+      <h5 class="mt-4 mb-3">
+        <i class="bi bi-shield-lock"></i> Accesos y seguridad
+        <span class="badge text-bg-secondary align-middle">Solo junta</span>
+      </h5>
+
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3">
+          <div class="card card-kpi shadow-sm"><div class="card-body">
+            <div class="text-muted small">Accesos (período)</div>
+            <div class="kpi-value" id="kpi-acc-total">—</div>
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card card-kpi shadow-sm"><div class="card-body">
+            <div class="text-muted small">Deliveries</div>
+            <div class="kpi-value" id="kpi-acc-deliveries">—</div>
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card card-kpi shadow-sm"><div class="card-body">
+            <div class="text-muted small">Entradas denegadas</div>
+            <div class="kpi-value text-danger" id="kpi-acc-denied">—</div>
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card card-kpi shadow-sm"><div class="card-body">
+            <div class="text-muted small">Anunciadas por app</div>
+            <div class="kpi-value" id="kpi-acc-app">—</div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-lg-8">
+          <div class="card shadow-sm"><div class="card-body">
+            <h6 class="card-title">Accesos por mes</h6>
+            <div class="chart-box"><canvas id="chart-visits-monthly"></canvas></div>
+          </div></div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="card shadow-sm"><div class="card-body">
+            <h6 class="card-title">Casas con más accesos</h6>
+            <div class="chart-box"><canvas id="chart-visits-houses"></canvas></div>
+          </div></div>
         </div>
       </div>
     </div>

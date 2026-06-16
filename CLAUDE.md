@@ -89,6 +89,13 @@ Decisiones clave:
 - BI se calcula en Postgres con funciones `bi_*` (security definer), no en JS.
   Para gráficas nuevas: crear función SQL en `02_functions.sql` y llamarla con
   `supabase.rpc(...)` desde `transparencia.js`.
+- BI de accesos (`10_visit_bi.sql`): `bi_visits_summary/monthly/by_house` son
+  **solo admin** (verifican `auth_role()='admin'` y si no devuelven vacío). El panel
+  "Accesos y seguridad" en `transparencia.js` se revela solo si el rol es admin.
+  Como `cleanup_delivery_visits()` borra deliveries, antes los archiva en
+  `visit_archive` (registro mínimo, sin nombres); las funciones leen vivas+archivadas.
+- Transparencia tiene dos filtros: rango de meses (tendencias) y un selector
+  `month` opcional que acota categorías + detalle a un mes puntual.
 - Cuotas mensuales se generan con `generate_monthly_fees()` vía **pg_cron**
   (gratis en Supabase; los cron jobs de Render cuestan dinero). El endpoint
   `POST /api/fees/generate` es respaldo manual.
