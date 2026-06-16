@@ -11,6 +11,8 @@ alter table houses add column if not exists vehicles int not null default 0
 -- (antes era 'language sql' sin guardia de rol: cualquiera autenticado podía
 --  consultar quién debe. Ahora solo admin, y devuelve el teléfono para el
 --  recordatorio por WhatsApp.)
+-- Cambia el tipo de retorno (agrega phone), así que hay que DROP antes de crear.
+drop function if exists bi_delinquency();
 create or replace function bi_delinquency()
 returns table (house_code text, owner_name text, phone text,
                overdue_count bigint, overdue_amount numeric)
