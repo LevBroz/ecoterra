@@ -163,6 +163,7 @@ button, a, select, [data-bs-toggle], .nav-link {
 .card-kpi {
   border-left: 4px solid var(--et-primary);
   background: var(--et-surface);
+  height: 100%; /* todas las tarjetas de una fila igualan altura */
 }
 
 .card-kpi > .card-body > .text-muted {
