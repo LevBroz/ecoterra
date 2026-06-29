@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { guardPage, logout, getAccessToken } from './auth.js';
 import { API_URL } from './config.js';
 import { fmtMoney, fmtDate, badge, toast, renderNavbar, enableCardTables, emitReceipt } from './ui.js';
+import { PAYMENT_OPTIONS, OFFICE_HOURS } from './config.js';
 
 const ctx = await guardPage('admin');
 if (!ctx) throw new Error('redirect');
@@ -58,17 +59,25 @@ document.getElementById('delinquency-body').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-remind]');
   if (!btn) return;
   const { phone, code, owner, count, amount } = btn.dataset;
-  const msg = `Estimada ${owner}, le recordamos que su casa ${code} tiene ${count} cuota(s) `
-    + `de mantenimiento pendiente(s) por un total de ${fmtMoney(Number(amount))}. `
-    + `Puede ponerse al día por transferencia o en administración. `
+  const msg = `Estimada ${owner},\n\n`
+    + `Le recordamos que su casa ${code} tiene ${count} cuota(s) de mantenimiento `
+    + `pendiente(s) por un total de ${fmtMoney(Number(amount))}.\n\n`
+    + `Opciones de pago: ${PAYMENT_OPTIONS}.\n`
+    + `Horario de atención: ${OFFICE_HOURS}.\n\n`
     + `¡Gracias! — Junta Directiva EcoTerra`;
-  // wa.me requiere dígitos en formato internacional. SV = 503; si vienen 8
-  // dígitos locales se antepone 503. Si no hay teléfono, WhatsApp pide el contacto.
+  const enc = encodeURIComponent(msg);
+  // Teléfono a formato internacional. SV = 503; si vienen 8 dígitos locales se antepone.
   const digits = (phone || '').replace(/\D/g, '');
   const intl = digits ? (digits.length <= 8 ? '503' + digits : digits) : '';
-  const url = intl
-    ? `https://wa.me/${intl}?text=${encodeURIComponent(msg)}`
-    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  // Celular/app nativa → wa.me (abre app). Escritorio → WhatsApp Web como fallback.
+  const isMobile = window.Capacitor?.isNativePlatform?.()
+    || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  let url;
+  if (isMobile) {
+    url = intl ? `https://wa.me/${intl}?text=${enc}` : `https://wa.me/?text=${enc}`;
+  } else {
+    url = intl ? `https://web.whatsapp.com/send?phone=${intl}&text=${enc}` : 'https://web.whatsapp.com/';
+  }
   window.open(url, '_blank');
 });
 
@@ -149,6 +158,7 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
       method: payment.method,
       reference: payment.reference,
       paidAt: fmtDate(payment.paid_at),
+      canArchive: true,
     };
     document.getElementById('last-receipt').innerHTML =
       '<button class="btn btn-outline-success" id="emit-receipt"><i class="bi bi-filetype-pdf"></i> Descargar / enviar recibo</button>';

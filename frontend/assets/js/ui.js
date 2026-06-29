@@ -1,7 +1,11 @@
 // Helpers de UI compartidos
+import { supabase } from './supabaseClient.js';
 
-export function fmtMoney(n, currency = 'USD') {
-  return new Intl.NumberFormat('es', { style: 'currency', currency }).format(n ?? 0);
+// Formato $ 1,000.55 — miles con coma, decimales con punto
+export function fmtMoney(n) {
+  return '$ ' + Number(n ?? 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  });
 }
 
 export function fmtDate(d) {
@@ -140,12 +144,57 @@ export async function emitReceipt(d) {
   const filename = `recibo_${d.folio}.pdf`;
   const file = new File([doc.output('blob')], filename, { type: 'application/pdf' });
 
-  // Compartir el PDF (WhatsApp, etc.) si el dispositivo lo soporta; si no, descargar
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Recibo EcoTerra', text: `Comprobante de pago ${d.folio}` }); return; }
-    catch (e) { if (e.name === 'AbortError') return; }
-  }
-  doc.save(filename);
+  // Menú de opciones: compartir / descargar / guardar en transacciones
+  const el = receiptModal();
+  const status = el.querySelector('[data-act="status"]');
+  status.textContent = '';
+  status.className = 'small text-muted text-center';
+  el.querySelector('[data-act="archive"]').classList.toggle('d-none', !d.canArchive);
+
+  el.querySelector('[data-act="share"]').onclick = async () => {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'Recibo EcoTerra', text: `Comprobante de pago ${d.folio}` }); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    // Escritorio: WhatsApp Web no acepta adjuntos por URL → descarga + abre WhatsApp Web
+    doc.save(filename);
+    window.open('https://web.whatsapp.com/', '_blank');
+    status.textContent = 'PDF descargado. Adjúntalo en WhatsApp Web.';
+  };
+  el.querySelector('[data-act="download"]').onclick = () => doc.save(filename);
+  el.querySelector('[data-act="archive"]').onclick = async () => {
+    status.textContent = 'Guardando…';
+    const { error } = await supabase.storage.from('receipts')
+      .upload(`payments/${d.folio}.pdf`, file, { upsert: true, contentType: 'application/pdf' });
+    status.className = 'small text-center ' + (error ? 'text-danger' : 'text-success');
+    status.textContent = error ? `Error: ${error.message}` : 'Guardado en transacciones ✓';
+  };
+
+  bootstrap.Modal.getOrCreateInstance(el).show();
+}
+
+// Modal reutilizable de opciones del recibo (se crea una vez)
+function receiptModal() {
+  let el = document.getElementById('receipt-modal');
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = 'receipt-modal';
+  el.className = 'modal fade';
+  el.tabIndex = -1;
+  el.innerHTML = `<div class="modal-dialog modal-sm"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title"><i class="bi bi-filetype-pdf"></i> Recibo de pago</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body d-grid gap-2">
+      <button class="btn btn-success" data-act="share"><i class="bi bi-whatsapp"></i> Compartir por WhatsApp</button>
+      <button class="btn btn-outline-success" data-act="download"><i class="bi bi-download"></i> Descargar al dispositivo</button>
+      <button class="btn btn-outline-secondary d-none" data-act="archive"><i class="bi bi-folder-plus"></i> Guardar en transacciones</button>
+      <div data-act="status" class="small text-muted text-center"></div>
+    </div>
+  </div></div>`;
+  document.body.appendChild(el);
+  return el;
 }
 
 // Navbar compartida; `active` = id de página activa

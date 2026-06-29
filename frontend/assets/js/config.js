@@ -11,3 +11,7 @@ export const API_URL = 'https://ecoterra-bung.onrender.com';
 // OJO: en la APK no se puede usar location.origin (sería el WebView local),
 // por eso se fija aquí la URL real y accesible.
 export const PUBLIC_WEB_URL = 'https://ecoterra1.netlify.app';
+
+// Texto editable para el recordatorio de cobro por WhatsApp
+export const PAYMENT_OPTIONS = 'transferencia bancaria o efectivo en administración';
+export const OFFICE_HOURS = 'Lunes a Viernes de 9:00 AM a 4:00 PM';

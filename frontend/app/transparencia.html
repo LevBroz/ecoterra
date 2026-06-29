@@ -89,23 +89,7 @@
       </div>
     </div>
 
-    <!-- Detalle de movimientos -->
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h6 class="card-title">
-          Detalle de gastos e inversiones
-          <span id="detail-period" class="text-muted small fw-normal"></span>
-        </h6>
-        <div class="table-responsive">
-          <table class="table table-hover table-sm cards">
-            <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th class="text-end">Monto</th><th>Factura</th></tr></thead>
-            <tbody id="tx-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Accesos y seguridad — SOLO junta directiva (oculto para residentes) -->
+    <!-- Accesos y seguridad — SOLO junta directiva (arriba; oculto para residentes) -->
     <div id="accesos-panel" class="d-none">
       <h5 class="mt-4 mb-3">
         <i class="bi bi-shield-lock"></i> Accesos y seguridad
@@ -151,6 +135,22 @@
             <h6 class="card-title">Casas con más accesos</h6>
             <div class="chart-box"><canvas id="chart-visits-houses"></canvas></div>
           </div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detalle de movimientos (abajo) -->
+    <div class="card shadow-sm mt-4">
+      <div class="card-body">
+        <h6 class="card-title">
+          Detalle de gastos e inversiones
+          <span id="detail-period" class="text-muted small fw-normal"></span>
+        </h6>
+        <div class="table-responsive">
+          <table class="table table-hover table-sm cards">
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th class="text-end">Monto</th><th>Factura</th></tr></thead>
+            <tbody id="tx-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
