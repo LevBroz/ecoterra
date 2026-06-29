@@ -311,6 +311,17 @@ button, a, select, [data-bs-toggle], .nav-link {
   min-height: 280px;
 }
 
+/* Tarjetas de gráfica igualan altura dentro de su fila */
+.card:has(.chart-box) { height: 100%; }
+
+/* Recorte a 3 líneas (anuncios no leídos; "Ver completo" muestra todo) */
+.text-truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* ---------- Toasts ---------- */
 .toast {
   border-radius: 0.6rem;

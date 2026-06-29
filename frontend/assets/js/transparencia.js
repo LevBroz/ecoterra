@@ -185,6 +185,7 @@ async function loadAccesos(months) {
   document.getElementById('kpi-acc-total').textContent = total;
   document.getElementById('kpi-acc-deliveries').textContent = Number(s.deliveries || 0);
   document.getElementById('kpi-acc-denied').textContent = Number(s.denied || 0);
+  document.getElementById('kpi-acc-qr').textContent = Number(s.qr_entries || 0);
   document.getElementById('kpi-acc-app').textContent =
     total ? `${Math.round(Number(s.announced_app || 0) / total * 100)}%` : '—';
 

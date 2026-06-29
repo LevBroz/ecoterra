@@ -31,7 +31,8 @@
       visitas/delivery anunciados. El estado de pago aparece en cada fila.
     </div>
 
-    <div class="table-responsive bg-white rounded shadow-sm">
+    <h6 class="text-muted mb-2">Pendientes</h6>
+    <div class="table-responsive bg-white rounded shadow-sm mb-4">
       <table class="table table-hover cards mb-0">
         <thead>
           <tr>
@@ -40,6 +41,18 @@
           </tr>
         </thead>
         <tbody id="visits-body"></tbody>
+      </table>
+    </div>
+
+    <h6 class="text-muted mb-2">Resueltas hoy</h6>
+    <div class="table-responsive bg-white rounded shadow-sm">
+      <table class="table table-hover cards mb-0">
+        <thead>
+          <tr>
+            <th>Casa</th><th>Tipo</th><th>Nombre</th><th>Resultado</th><th>Vía</th><th>Hora</th>
+          </tr>
+        </thead>
+        <tbody id="resolved-body"></tbody>
       </table>
     </div>
   </main>

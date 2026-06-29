@@ -78,15 +78,38 @@ async function loadVisits() {
   await renderVisits();
 }
 
+function resolvedRow(v) {
+  const via = v.status === 'arrived'
+    ? (v.pass_used_at
+        ? '<span class="badge text-bg-success"><i class="bi bi-qr-code"></i> QR</span>'
+        : '<span class="badge text-bg-secondary">Manual</span>')
+    : '—';
+  const hora = v.checked_at
+    ? new Date(v.checked_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
+    : '—';
+  return `
+    <tr>
+      <td><strong>${v.houses.code}</strong></td>
+      <td>${v.type === 'delivery' ? 'Delivery' : 'Visita'}</td>
+      <td>${v.visitor_name}</td>
+      <td>${badge(v.status)}</td>
+      <td>${via}</td>
+      <td>${hora}</td>
+    </tr>`;
+}
+
 async function renderVisits() {
   const term = document.getElementById('search').value.trim().toLowerCase();
-  const rows = [];
+  const pending = [], resolved = [];
   for (const v of allVisits) {
     if (term && !v.visitor_name.toLowerCase().includes(term)
         && !v.houses.code.toLowerCase().includes(term)) continue;
+
+    if (v.status !== 'announced') { resolved.push(resolvedRow(v)); continue; }
+
     const current = await houseIsCurrent(v.house_id);
-    rows.push(`
-      <tr class="${!current && v.status === 'announced' ? 'table-danger' : ''}">
+    pending.push(`
+      <tr class="${!current ? 'table-danger' : ''}">
         <td><strong>${v.houses.code}</strong><br /><small class="text-muted">${v.houses.owner_name}</small></td>
         <td>${current
           ? '<span class="badge text-bg-success">Al día</span>'
@@ -96,19 +119,20 @@ async function renderVisits() {
         <td>${v.company || v.plate || '—'}</td>
         <td>${badge(v.status)}</td>
         <td>
-          ${v.status === 'announced' ? `
-            <button class="btn btn-success btn-sm" data-action="arrived" data-id="${v.id}"
-              ${!current ? 'disabled title="Casa en mora — entrada no permitida"' : ''}>
-              <i class="bi bi-check-lg"></i> Ingresó
-            </button>
-            <button class="btn btn-outline-danger btn-sm" data-action="denied" data-id="${v.id}">
-              Denegar
-            </button>` : ''}
+          <button class="btn btn-success btn-sm" data-action="arrived" data-id="${v.id}"
+            ${!current ? 'disabled title="Casa en mora — entrada no permitida"' : ''}>
+            <i class="bi bi-check-lg"></i> Ingresó
+          </button>
+          <button class="btn btn-outline-danger btn-sm" data-action="denied" data-id="${v.id}">
+            Denegar
+          </button>
         </td>
       </tr>`);
   }
   document.getElementById('visits-body').innerHTML =
-    rows.join('') || '<tr><td colspan="7" class="text-muted p-3">Sin visitas anunciadas para hoy.</td></tr>';
+    pending.join('') || '<tr><td colspan="7" class="text-muted p-3">Sin visitas pendientes para hoy.</td></tr>';
+  document.getElementById('resolved-body').innerHTML =
+    resolved.join('') || '<tr><td colspan="6" class="text-muted p-3">Aún no hay visitas resueltas hoy.</td></tr>';
 }
 
 document.getElementById('visits-body').addEventListener('click', async (e) => {

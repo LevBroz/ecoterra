@@ -178,6 +178,7 @@ async function loadReservations() {
     </tr>`).join('') || '<tr><td colspan="6" class="text-muted">Sin reservas.</td></tr>';
 }
 
+let annAll = [];
 async function loadAnnouncements() {
   // announcement_reads viene filtrado por RLS a las lecturas del usuario actual
   const { data, error } = await supabase
@@ -187,6 +188,7 @@ async function loadAnnouncements() {
     .order('published_at', { ascending: false })
     .limit(50);
   if (error) return;
+  annAll = data;
 
   const unread = data.filter((a) => !a.announcement_reads.length);
   const read = data.filter((a) => a.announcement_reads.length);
@@ -196,18 +198,25 @@ async function loadAnnouncements() {
   badge.textContent = unread.length;
   badge.classList.toggle('d-none', unread.length === 0);
 
-  // No leídos: post completo estilo feed
+  // No leídos: post estilo feed; imagen completa (sin recortar) y opción de ver full
   document.getElementById('announcements-list').innerHTML = unread.map((a) => `
     <div class="card mb-3 ${a.pinned ? 'border-success' : ''}">
-      ${a.image_url ? `<img src="${a.image_url}" class="card-img-top" alt="" style="max-height:360px;object-fit:cover;" loading="lazy" />` : ''}
+      ${a.image_url ? `<img src="${a.image_url}" class="card-img-top" alt=""
+        style="max-height:240px;object-fit:contain;background:#faf6f7;cursor:pointer"
+        loading="lazy" data-ann-view="${a.id}" />` : ''}
       <div class="card-body">
         <h6 class="card-title">${a.pinned ? '<i class="bi bi-pin-angle-fill text-success"></i> ' : ''}${a.title}</h6>
-        <p class="card-text" style="white-space:pre-line;">${a.body}</p>
+        <p class="card-text text-truncate-3" style="white-space:pre-line;">${a.body}</p>
         <div class="d-flex justify-content-between align-items-center">
           <small class="text-muted">${fmtDate(a.published_at.slice(0, 10))}</small>
-          <button class="btn btn-outline-success btn-sm" data-mark-read="${a.id}">
-            <i class="bi bi-check2"></i> Marcar como leído
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" data-ann-view="${a.id}">
+              <i class="bi bi-arrows-fullscreen"></i> Ver completo
+            </button>
+            <button class="btn btn-outline-success btn-sm" data-mark-read="${a.id}">
+              <i class="bi bi-check2"></i> Leído
+            </button>
+          </div>
         </div>
       </div>
     </div>`).join('') || '<p class="text-muted">No tienes anuncios sin leer.</p>';
@@ -227,7 +236,22 @@ async function loadAnnouncements() {
     </details>`).join('');
 }
 
+function openAnnModal(id) {
+  const a = annAll.find((x) => x.id === id);
+  if (!a) return;
+  document.getElementById('ann-modal-title').textContent = a.title;
+  document.getElementById('ann-modal-date').textContent = fmtDate(a.published_at.slice(0, 10));
+  document.getElementById('ann-modal-body').textContent = a.body;
+  const imgWrap = document.getElementById('ann-modal-img');
+  imgWrap.innerHTML = a.image_url
+    ? `<img src="${a.image_url}" class="img-fluid rounded mb-3" alt="" />` : '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('ann-modal')).show();
+}
+
 document.getElementById('announcements-list').addEventListener('click', async (e) => {
+  const view = e.target.closest('[data-ann-view]');
+  if (view) return openAnnModal(view.dataset.annView);
+
   const btn = e.target.closest('button[data-mark-read]');
   if (!btn) return;
   const { error } = await supabase.from('announcement_reads').insert({
