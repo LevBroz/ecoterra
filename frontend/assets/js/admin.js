@@ -467,19 +467,76 @@ document.getElementById('tx-body').addEventListener('click', async (e) => {
 });
 
 // ----- Casas: listado, plantilla e importación CSV -----
+const OCC_LABEL = { owner: 'Propietario', tenant: 'Inquilino' };
+let housesCache = [];
 async function loadHousesList() {
   const { data } = await supabase.from('houses').select('*').order('code');
-  document.getElementById('houses-body').innerHTML = (data || []).map((h) => `
+  housesCache = data || [];
+  document.getElementById('houses-body').innerHTML = housesCache.map((h) => `
     <tr>
       <td><strong>${h.code}</strong></td><td>${h.owner_name}</td>
+      <td><span class="badge ${h.occupant_type === 'tenant' ? 'text-bg-warning' : 'text-bg-success'}">
+        ${OCC_LABEL[h.occupant_type] || 'Propietario'}</span></td>
       <td>${h.email || '—'}</td><td>${h.phone || '—'}</td>
       <td>${h.vehicles ?? 0}</td>
-    </tr>`).join('') || '<tr><td colspan="5" class="text-muted">Sin casas registradas.</td></tr>';
+      <td><button class="btn btn-outline-secondary btn-sm" data-edit-house="${h.code}">
+        <i class="bi bi-pencil"></i> Editar</button></td>
+    </tr>`).join('') || '<tr><td colspan="7" class="text-muted">Sin casas registradas.</td></tr>';
 }
 
+// ----- Alta / edición manual de casa -----
+const houseModal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('house-modal'));
+
+document.getElementById('btn-add-house').addEventListener('click', () => {
+  document.getElementById('house-form').reset();
+  document.getElementById('house-edit-code').value = '';
+  document.getElementById('house-code').disabled = false;
+  document.getElementById('house-modal-title').textContent = 'Agregar casa';
+  houseModal().show();
+});
+
+document.getElementById('houses-body').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-edit-house]');
+  if (!btn) return;
+  const h = housesCache.find((x) => x.code === btn.dataset.editHouse);
+  if (!h) return;
+  document.getElementById('house-edit-code').value = h.code;
+  document.getElementById('house-code').value = h.code;
+  document.getElementById('house-code').disabled = true; // el código no se cambia al editar
+  document.getElementById('house-owner').value = h.owner_name;
+  document.getElementById('house-occupant').value = h.occupant_type || 'owner';
+  document.getElementById('house-vehicles').value = h.vehicles ?? 0;
+  document.getElementById('house-email').value = h.email || '';
+  document.getElementById('house-phone').value = h.phone || '';
+  document.getElementById('house-modal-title').textContent = `Editar casa ${h.code}`;
+  houseModal().show();
+});
+
+document.getElementById('house-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const editing = document.getElementById('house-edit-code').value;
+  const payload = {
+    code: document.getElementById('house-code').value.trim(),
+    owner_name: document.getElementById('house-owner').value.trim(),
+    occupant_type: document.getElementById('house-occupant').value,
+    vehicles: Number.parseInt(document.getElementById('house-vehicles').value, 10) || 0,
+    email: document.getElementById('house-email').value.trim() || null,
+    phone: document.getElementById('house-phone').value.trim() || null,
+  };
+  const { error } = editing
+    ? await supabase.from('houses').update(payload).eq('code', editing)
+    : await supabase.from('houses').insert(payload);
+  if (error) {
+    return toast(/duplicate|unique/i.test(error.message) ? 'Ya existe una casa con ese número' : error.message, 'danger');
+  }
+  houseModal().hide();
+  toast(editing ? 'Casa actualizada' : 'Casa agregada');
+  await Promise.all([loadHousesList(), loadHouses()]);
+});
+
 document.getElementById('btn-template').addEventListener('click', () => {
-  const csv = 'code,owner_name,email,phone,vehicles\n'
-    + 'A-01,Familia Ejemplo,correo@ejemplo.com,7000-0000,2\n';
+  const csv = 'code,owner_name,email,phone,vehicles,occupant_type\n'
+    + 'A-01,Familia Ejemplo,correo@ejemplo.com,7000-0000,2,owner\n';
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   a.download = 'plantilla_casas_ecoterra.csv';
@@ -514,6 +571,7 @@ async function importHouses(rows) {
     email: (r.email || '').trim() || null,
     phone: (r.phone || '').trim() || null,
     vehicles: Number.parseInt(r.vehicles, 10) || 0,
+    occupant_type: /tenant|inquilino/i.test((r.occupant_type || '').trim()) ? 'tenant' : 'owner',
   })).filter((r) => r.code && r.owner_name);
 
   if (!clean.length) {
@@ -536,7 +594,7 @@ async function importHouses(rows) {
   if (dupes.length && update) {
     for (const r of dupes) {
       const { error } = await supabase.from('houses')
-        .update({ owner_name: r.owner_name, email: r.email, phone: r.phone, vehicles: r.vehicles })
+        .update({ owner_name: r.owner_name, email: r.email, phone: r.phone, vehicles: r.vehicles, occupant_type: r.occupant_type })
         .eq('code', r.code);
       if (!error) updated += 1;
     }

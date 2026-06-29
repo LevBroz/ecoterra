@@ -254,10 +254,13 @@
       <!-- Casas (importar / plantilla) -->
       <div class="tab-pane fade" id="tab-casas">
         <div class="d-flex gap-2 flex-wrap align-items-center mb-3">
+          <button class="btn btn-success" id="btn-add-house">
+            <i class="bi bi-plus-lg"></i> Agregar casa
+          </button>
           <button class="btn btn-outline-success" id="btn-template">
             <i class="bi bi-download"></i> Descargar plantilla
           </button>
-          <label class="btn btn-success mb-0">
+          <label class="btn btn-outline-success mb-0">
             <i class="bi bi-upload"></i> Importar CSV
             <input type="file" id="import-file" accept=".csv,text/csv" hidden />
           </label>
@@ -267,14 +270,14 @@
           </div>
         </div>
         <p class="text-muted small">
-          Columnas: <code>code, owner_name, email, phone, vehicles</code>.
-          Por defecto, las casas ya registradas se <strong>omiten</strong> y se avisan;
-          marca "Actualizar casas existentes" para sobrescribir sus datos.
+          Columnas CSV: <code>code, owner_name, email, phone, vehicles, occupant_type</code>
+          (occupant_type = <code>owner</code> o <code>tenant</code>; opcional, por defecto propietario).
+          Las casas ya registradas se <strong>omiten</strong> salvo que marques "Actualizar casas existentes".
         </p>
         <div id="import-report"></div>
         <div class="table-responsive">
           <table class="table table-hover cards">
-            <thead><tr><th>Casa</th><th>Propietario</th><th>Correo</th><th>Teléfono</th><th>Vehículos</th></tr></thead>
+            <thead><tr><th>Casa</th><th>Propietario</th><th>Tipo</th><th>Correo</th><th>Teléfono</th><th>Vehículos</th><th>Acción</th></tr></thead>
             <tbody id="houses-body"></tbody>
           </table>
         </div>
@@ -282,6 +285,54 @@
 
     </div>
   </main>
+
+  <!-- Modal: agregar / editar casa -->
+  <div class="modal fade" id="house-modal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+      <form id="house-form">
+        <div class="modal-header">
+          <h5 class="modal-title" id="house-modal-title">Agregar casa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="house-edit-code" />
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">N° de casa <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="house-code" required placeholder="A-01" />
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Propietario / responsable <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="house-owner" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Tipo de ocupante</label>
+              <select class="form-select" id="house-occupant">
+                <option value="owner">Propietario</option>
+                <option value="tenant">Inquilino</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Vehículos (stickers)</label>
+              <input type="number" min="0" class="form-control" id="house-vehicles" value="0" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Correo</label>
+              <input type="email" class="form-control" id="house-email" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" id="house-phone" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Guardar</button>
+        </div>
+      </form>
+    </div></div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="../assets/js/admin.js"></script>
